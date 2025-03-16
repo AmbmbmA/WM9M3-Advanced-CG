@@ -51,6 +51,7 @@ public:
 	std::vector<Light*> lights;
 	Light* background = NULL;
 	BVHNode* bvh = NULL;
+	std::vector<unsigned int> triIndex;
 	Camera camera;
 	AABB bounds;
 	void build()

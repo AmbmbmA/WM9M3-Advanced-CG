@@ -167,8 +167,6 @@ public:
 
 	}
 
-
-
 	void interpolateAttributes(const float alpha, const float beta, const float gamma, Vec3& interpolatedNormal, float& interpolatedU, float& interpolatedV) const
 	{
 		interpolatedNormal = vertices[0].normal * alpha + vertices[1].normal * beta + vertices[2].normal * gamma;
@@ -510,6 +508,7 @@ public:
 	unsigned int offset;
 	unsigned int start;
 	unsigned int triNum;
+
 	BVHNode()
 	{
 		r = NULL;
@@ -523,6 +522,7 @@ public:
 		// Add BVH building code here
 		start = _start;
 		triNum = end - _start;
+
 
 		// get the box for this node
 		bounds.reset();
@@ -644,15 +644,54 @@ public:
 		r->build(inputTriangles, triIndex, middle, end, depth + 1);
 	}
 
-	void traverse(const Ray& ray, const std::vector<Triangle>& triangles, IntersectionData& intersection)
+	void traverse(const Ray& ray, const std::vector<Triangle>& triangles, std::vector<unsigned int>& triIndex, IntersectionData& intersection)
 	{
 		// Add BVH Traversal code here
+
+		float tbox;
+
+		// if intersect the node
+		if (!bounds.rayAABB(ray, tbox)) return;
+
+		// if intersect close than t, then no updation
+		if (tbox >= intersection.t) return;
+
+		// if leaf
+		if (!l && !r) {
+
+			// go through all triangles
+			for (unsigned int i = 0; i < triNum; i++) {
+				unsigned int triId = triIndex[start + i];
+				const Triangle& tempTri = triangles[triId];
+				float t;
+				float u;
+				float v;
+				if (tempTri.rayIntersectMollerTrumbore(ray, t, u, v))
+				{
+					if (t < intersection.t)
+					{
+						intersection.t = t;
+						intersection.ID = i;
+						intersection.alpha = u;
+						intersection.beta = v;
+						intersection.gamma = 1.0f - (u + v);
+					}
+				}
+			
+			}
+			return;
+		}
+
+		if (l) l->traverse(ray, triangles, triIndex,intersection);
+		if (r) r->traverse(ray, triangles, triIndex,intersection);
+
+
 	}
-	IntersectionData traverse(const Ray& ray, const std::vector<Triangle>& triangles)
+	IntersectionData traverse(const Ray& ray, const std::vector<Triangle>& triangles, std::vector<unsigned int>& triIndex)
 	{
 		IntersectionData intersection;
 		intersection.t = FLT_MAX;
-		traverse(ray, triangles, intersection);
+		traverse(ray, triangles, triIndex, intersection);
 		return intersection;
 	}
 	bool traverseVisible(const Ray& ray, const std::vector<Triangle>& triangles, const float maxT)
@@ -661,4 +700,5 @@ public:
 		return true;
 	}
 };
+
 
