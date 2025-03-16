@@ -5,7 +5,7 @@
 #include "GEMLoader.h"
 #include "Renderer.h"
 
-const float MOVESENSITY = 0.0001f;
+const float MOVESENSITY = 0.02f;
 
 class RTCamera
 {
@@ -18,7 +18,7 @@ public:
 	float rotspeed = 5.0f;
 	RTCamera()
 	{
-		rotspeed = 5.0f / 10;
+		rotspeed = 5.0f / 3;
 	}
 	void forward()
 	{

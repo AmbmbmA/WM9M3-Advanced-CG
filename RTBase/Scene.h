@@ -64,6 +64,10 @@ public:
 
 		// use id instead tri to save memory
 		size_t tempTriSize = triangles.size();
+
+		std::cout << "Triangle Num = " << tempTriSize << std::endl;
+
+
 		triIndex.resize(tempTriSize);
 		for (unsigned int i = 0; i < tempTriSize; i++) {
 			triIndex[i] = i;
@@ -93,7 +97,7 @@ public:
 		return bvh->traverse(ray, triangles, triIndex);
 	}
 
-	IntersectionData traverseold(const Ray& ray)
+	IntersectionData traverseOld(const Ray& ray)
 	{
 		IntersectionData intersection;
 		intersection.t = FLT_MAX;

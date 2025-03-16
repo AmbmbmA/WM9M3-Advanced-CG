@@ -81,7 +81,8 @@ void testRayPlaneIntersect() {
 }
 
 
-#define EPSILON 0.001f
+//#define EPSILON 0.001f
+#define EPSILON 1e-10f
 
 class Triangle
 {
@@ -145,10 +146,10 @@ public:
 
 		Vec3 p = d.cross(e2);
 		float det = e1r.dot(p);
-		float invdet = 1.0f / det;
-
 		// parallel
-		if (fabs(det) < 0.00001f) return false;
+		if (fabs(det) < EPSILON) return false;
+
+		float invdet = 1.0f / det;
 
 		u = T.dot(p) * invdet;
 		if (u < 0 || u > 1.0f) return false;
@@ -281,7 +282,7 @@ public:
 		float y = INFINITY;
 		float z = INFINITY;
 		// prevent parallel division
-		if (fabs(r.dir.x) > 0.0000001) {
+		if (fabs(r.dir.x) > EPSILON) {
 			x = 1.0f / r.dir.x;
 		}
 		else {
@@ -289,7 +290,7 @@ public:
 				return false;
 			}
 		}
-		if (fabs(r.dir.y) > 0.0000001) {
+		if (fabs(r.dir.y) > EPSILON) {
 			y = 1.0f / r.dir.y;
 		}
 		else {
@@ -297,7 +298,7 @@ public:
 				return false;
 			}
 		}
-		if (fabs(r.dir.z) > 0.0000001) {
+		if (fabs(r.dir.z) > EPSILON) {
 			z = 1.0f / r.dir.z;
 		}
 		else {
@@ -555,7 +556,7 @@ public:
 			float range = maxPos - minPos;
 
 			// if the axis size is too small ignore
-			if (fabs(range) < 0.000001) continue;
+			if (fabs(range) < EPSILON) continue;
 
 			// go through all stide ( 1 to step-1)
 			for (int s = 1; s < step; s++) {
@@ -683,10 +684,8 @@ public:
 			return;
 		}
 
-
 		if (l) l->traverse(ray, triangles, triIndex,intersection);
 		if (r) r->traverse(ray, triangles, triIndex,intersection);
-
 
 	}
 
