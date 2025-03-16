@@ -696,10 +696,38 @@ public:
 		traverse(ray, triangles, triIndex, intersection);
 		return intersection;
 	}
-	bool traverseVisible(const Ray& ray, const std::vector<Triangle>& triangles, const float maxT)
+	bool traverseVisible(const Ray& ray, const std::vector<Triangle>& triangles, std::vector<unsigned int>& triIndex,const float maxT)
 	{
 		// Add visibility code here
-		return true;
+		float tbox;
+
+		// if intersect the node or too far
+		if (!bounds.rayAABB(ray, tbox) || tbox > maxT) return false;
+
+		// if leaf
+		if (!l && !r) {
+
+			// go through all triangles
+			for (unsigned int i = 0; i < triNum; i++) {
+				unsigned int triId = triIndex[startIndex + i];
+				float t;
+				float u;
+				float v;
+				if (triangles[triId].rayIntersectMollerTrumbore(ray, t, u, v))
+				{
+					if (t < maxT && t > 0.0f)
+					{
+						return true;
+					}
+				}
+
+			}
+			return false;
+		}
+
+		if (l && l->traverseVisible(ray, triangles, triIndex, maxT)) return true;
+		if (r && r->traverseVisible(ray, triangles, triIndex, maxT)) return true;
+
+		return false;
 	}
 };
-
