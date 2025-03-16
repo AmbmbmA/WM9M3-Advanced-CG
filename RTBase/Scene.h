@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core.h"
 #include "Sampling.h"
@@ -64,13 +64,15 @@ public:
 
 		// use id instead tri to save memory
 		size_t tempTriSize = triangles.size();
-		std::vector<unsigned int> triIndex(tempTriSize);
+		triIndex.resize(tempTriSize);
 		for (unsigned int i = 0; i < tempTriSize; i++) {
 			triIndex[i] = i;
 		}
 
 
 		bvh->build(triangles, triIndex, 0, tempTriSize, 0);
+
+
 
 		// Do not touch the code below this line!
 		// Build light list
@@ -87,6 +89,11 @@ public:
 	}
 
 	IntersectionData traverse(const Ray& ray)
+	{
+		return bvh->traverse(ray, triangles, triIndex);
+	}
+
+	IntersectionData traverseold(const Ray& ray)
 	{
 		IntersectionData intersection;
 		intersection.t = FLT_MAX;
@@ -109,6 +116,7 @@ public:
 		}
 		return intersection;
 	}
+
 	Light* sampleLight(Sampler* sampler, float& pmf)
 	{
 		return NULL;

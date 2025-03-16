@@ -281,7 +281,7 @@ public:
 		float y = INFINITY;
 		float z = INFINITY;
 		// prevent parallel division
-		if (fabs(r.dir.x) > EPSILON) {
+		if (fabs(r.dir.x) > 0.0000001) {
 			x = 1.0f / r.dir.x;
 		}
 		else {
@@ -289,7 +289,7 @@ public:
 				return false;
 			}
 		}
-		if (fabs(r.dir.y) > EPSILON) {
+		if (fabs(r.dir.y) > 0.0000001) {
 			y = 1.0f / r.dir.y;
 		}
 		else {
@@ -297,7 +297,7 @@ public:
 				return false;
 			}
 		}
-		if (fabs(r.dir.z) > EPSILON) {
+		if (fabs(r.dir.z) > 0.0000001) {
 			z = 1.0f / r.dir.z;
 		}
 		else {
@@ -505,23 +505,22 @@ public:
 	BVHNode* l; // rigth sub node
 	// This can store an offset and number of triangles in a global triangle list for example
 	// But you can store this however you want!
-	unsigned int offset;
-	unsigned int start;
+	unsigned int startIndex;
 	unsigned int triNum;
 
 	BVHNode()
 	{
 		r = NULL;
 		l = NULL;
-		start = 0;
+		startIndex = 0;
 		triNum = 0;
 	}
 	// Note there are several options for how to implement the build method. Update this as required
-	void build(std::vector<Triangle>& inputTriangles, std::vector<unsigned int>& triIndex, unsigned int _start, unsigned int end, unsigned int depth)
+	void build(std::vector<Triangle>& inputTriangles, std::vector<unsigned int>& triIndex, unsigned int start, unsigned int end, unsigned int depth)
 	{
 		// Add BVH building code here
-		start = _start;
-		triNum = end - _start;
+		startIndex = start;
+		triNum = end - start;
 
 
 		// get the box for this node
@@ -556,7 +555,7 @@ public:
 			float range = maxPos - minPos;
 
 			// if the axis size is too small ignore
-			if (fabs(range) < EPSILON) continue;
+			if (fabs(range) < 0.000001) continue;
 
 			// go through all stide ( 1 to step-1)
 			for (int s = 1; s < step; s++) {
@@ -635,6 +634,9 @@ public:
 			return;
 		}
 
+		//std::cout << "BVH depth = " << depth << std::endl;
+
+
 		// Recursion build left and right
 
 		l = new BVHNode();
@@ -661,17 +663,16 @@ public:
 
 			// go through all triangles
 			for (unsigned int i = 0; i < triNum; i++) {
-				unsigned int triId = triIndex[start + i];
-				const Triangle& tempTri = triangles[triId];
+				unsigned int triId = triIndex[startIndex + i];
 				float t;
 				float u;
 				float v;
-				if (tempTri.rayIntersectMollerTrumbore(ray, t, u, v))
+				if (triangles[triId].rayIntersectMollerTrumbore(ray, t, u, v))
 				{
 					if (t < intersection.t)
 					{
 						intersection.t = t;
-						intersection.ID = i;
+						intersection.ID = triId;
 						intersection.alpha = u;
 						intersection.beta = v;
 						intersection.gamma = 1.0f - (u + v);
@@ -682,11 +683,13 @@ public:
 			return;
 		}
 
+
 		if (l) l->traverse(ray, triangles, triIndex,intersection);
 		if (r) r->traverse(ray, triangles, triIndex,intersection);
 
 
 	}
+
 	IntersectionData traverse(const Ray& ray, const std::vector<Triangle>& triangles, std::vector<unsigned int>& triIndex)
 	{
 		IntersectionData intersection;
@@ -700,5 +703,4 @@ public:
 		return true;
 	}
 };
-
 

@@ -5,6 +5,8 @@
 #include "GEMLoader.h"
 #include "Renderer.h"
 
+const float MOVESENSITY = 0.0001f;
+
 class RTCamera
 {
 public:
@@ -16,7 +18,7 @@ public:
 	float rotspeed = 5.0f;
 	RTCamera()
 	{
-		rotspeed = 5.0f;
+		rotspeed = 5.0f / 10;
 	}
 	void forward()
 	{
@@ -284,7 +286,8 @@ Scene* loadScene(std::string sceneName)
 		background = new BackgroundColour(Colour(0.0f, 0.0f, 0.0f));
 	}
 	scene->init(meshTriangles, meshMaterials, background);
-	viewcamera.movespeed = (scene->bounds.max - scene->bounds.min).length() * 0.05f;
+	//viewcamera.movespeed = (scene->bounds.max - scene->bounds.min).length() * 0.05f;
+	viewcamera.movespeed = (scene->bounds.max - scene->bounds.min).length() * MOVESENSITY;
 	scene->build();
 	return scene;
 }
