@@ -29,7 +29,7 @@ public:
 	// Add code here
 	Ray generateRay(float x, float y)
 	{
-		Vec3 dir(0, 0, 1);
+		Vec3 dir(0, 0, 0);
 
 		float xc = (2 * x) / (width - 1) - 1;
 		float yc = -(2 * y) / (height - 1) + 1;
@@ -56,7 +56,21 @@ public:
 	void build()
 	{
 		// Add BVH building code here
-		
+
+		if (bvh == nullptr) {
+			bvh = new BVHNode();
+		}
+
+		// use id instead tri to save memory
+		size_t tempTriSize = triangles.size();
+		std::vector<unsigned int> triIndex(tempTriSize);
+		for (unsigned int i = 0; i < tempTriSize; i++) {
+			triIndex[i] = i;
+		}
+
+
+		bvh->build(triangles, triIndex, 0, tempTriSize, 0);
+
 		// Do not touch the code below this line!
 		// Build light list
 		for (int i = 0; i < triangles.size(); i++)
@@ -70,6 +84,7 @@ public:
 			}
 		}
 	}
+
 	IntersectionData traverse(const Ray& ray)
 	{
 		IntersectionData intersection;
@@ -79,7 +94,7 @@ public:
 			float t;
 			float u;
 			float v;
-			if (triangles[i].rayIntersect(ray, t, u, v))
+			if (triangles[i].rayIntersectMollerTrumbore(ray, t, u, v))
 			{
 				if (t < intersection.t)
 				{
@@ -153,7 +168,8 @@ public:
 			}
 			shadingData.frame.fromVector(shadingData.sNormal);
 			shadingData.t = intersection.t;
-		} else
+		}
+		else
 		{
 			shadingData.wo = -ray.dir;
 			shadingData.t = intersection.t;

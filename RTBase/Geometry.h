@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core.h"
 #include "Sampling.h"
@@ -42,18 +42,19 @@ public:
 	bool rayIntersect(Ray& r, float& t)
 	{
 
-		if (n.dot(r.dir) == 0) {
-			return false;
-		}
-		else {
-			t = (d - n.dot(r.o)) / n.dot(r.dir);
-		}
+		// Plane normal vertical to ray direction hence ray parallel to plane
+		if (n.dot(r.dir) == 0) return false;
+
+		// calculate the distance
+		t = (d - n.dot(r.o)) / n.dot(r.dir);
+
+
+		// if in the front
 		if (t >= 0) {
 			return true;
 		}
 
 		return false;
-			
 
 	}
 
@@ -61,12 +62,22 @@ public:
 };
 
 
-bool testRayPlaneIntersect() {
-	Ray testTay(Vec3(0, 10, 0), Vec3(0, -1, 0));
+void testRayPlaneIntersect() {
+	Vec3 raydir = Vec3(0, -1, 0);
+	Ray testTay(Vec3(0, 10, 0), raydir);
 	Plane testPlane;
 	Vec3 testNormal = Vec3(0, 1, 0);
 	testPlane.init(testNormal, 0);
-	return false;
+	float t = 0.0f;
+	if (testPlane.rayIntersect(testTay, t)) {
+		std::cout << "Ray Plane Intersect correct!" << std::endl;
+		std::cout << "Distance = " << t << std::endl;
+		// t = 10;
+
+	}
+	else {
+		std::cout << "Ray Plane Intersect Wrong!" << std::endl;
+	}
 }
 
 
@@ -99,44 +110,61 @@ public:
 		return (vertices[0].p + vertices[1].p + vertices[2].p) / 3.0f;
 	}
 	// Add code here
-	bool rayIntersect1(const Ray& r, float& t, float& u, float& v) const
+	bool rayIntersectBasic(const Ray& r, float& t, float& u, float& v) const
 	{
+		// normal dot ray dir
 		float dotnodir = n.dot(r.dir);
-		if (dotnodir == 0) {
-			return false;
-		}
-	
-		t = -n.dot(r.o) + d / dotnodir;
-		
-		if (t < 0) {
-			return false;
-		}
 
-		int A = e1.cross(e2).length();
+		// parallel
+		if (dotnodir == 0) return false;
+
+		t = (d - n.dot(r.o)) / dotnodir;
+
+		// if behind
+		if (t < 0) return false;
+
+		float invA = 1.0f / e1.cross(e2).dot(n);
+
 		Vec3 q1 = (r.o + r.dir * t) - vertices[1].p;
-		u = e1.cross(q1).dot(n) / A;
-		Vec3 q2 = (r.o + r.dir * t) - vertices[2].p;
-		v = e2.cross(q2).dot(n) / A;
-		
+		u = e1.cross(q1).dot(n) * invA;
+		if (u < 0 || u > 1.0f) return false;
 
-		if (v < 0 || (u + v) > 1.0f) { return false; }
+		Vec3 q2 = (r.o + r.dir * t) - vertices[2].p;
+		v = e2.cross(q2).dot(n) * invA;
+		if (v < 0 || (u + v) > 1.0f) return false;
+
 		return true;
 
 	}
 
-	bool rayIntersect(const Ray& r, float& t, float& u, float& v) const
+	bool rayIntersectMollerTrumbore(const Ray& r, float& t, float& u, float& v) const
 	{
-		float denom = Dot(n, r.dir);
-		if (denom == 0) { return false; }
-		t = (d - Dot(n, r.o)) / denom;
-		if (t < 0) { return false; }
-		Vec3 p = r.at(t);
-		float invArea = 1.0f / Dot(e1.cross(e2), n);
-		u = Dot(e1.cross(p - vertices[1].p), n) * invArea;
-		if (u < 0 || u > 1.0f) { return false; }
-		v = Dot(e2.cross(p - vertices[2].p), n) * invArea;
-		if (v < 0 || (u + v) > 1.0f) { return false; }
+		Vec3 e1r = -e1;
+		Vec3 T = r.o - vertices[2].p;
+		Vec3 d = r.dir;
+
+		Vec3 p = d.cross(e2);
+		float det = e1r.dot(p);
+		float invdet = 1.0f / det;
+
+		// parallel
+		if (fabs(det) < 0.00001f) return false;
+
+		u = T.dot(p) * invdet;
+		if (u < 0 || u > 1.0f) return false;
+
+		Vec3 q = T.cross(e1r);
+		v = d.dot(q) * invdet;
+		if (v < 0 || (u + v) > 1.0f) return false;
+
+
+		t = e2.dot(q) * invdet;
+
+		// if behind
+		if (t < 0) return false;
+
 		return true;
+
 	}
 
 
@@ -148,16 +176,81 @@ public:
 		interpolatedU = vertices[0].u * alpha + vertices[1].u * beta + vertices[2].u * gamma;
 		interpolatedV = vertices[0].v * alpha + vertices[1].v * beta + vertices[2].v * gamma;
 	}
+
 	// Add code here
 	Vec3 sample(Sampler* sampler, float& pdf)
 	{
-		return Vec3(0, 0, 0);
+		float r1 = sampler->next();
+		float r2 = sampler->next();
+
+		pdf = 1.0f / area;
+
+		float alpha = 1 - sqrtf(r1);
+		float beta = r2 * sqrtf(r1);
+		float gamma = 1 - alpha - beta;
+
+		Vec3 result = vertices[0].p * alpha + vertices[1].p * beta + vertices[2].p * gamma;
+
+		return result;
+
 	}
 	Vec3 gNormal()
 	{
 		return (n * (Dot(vertices[0].normal, n) > 0 ? 1.0f : -1.0f));
 	}
 };
+
+void testRayTriBasicIntersect() {
+	Vec3 raydir = Vec3(0, -1, 0);
+	Ray testTay(Vec3(0, 10, 0), raydir);
+	Triangle testTri;
+	Vertex v0, v1, v2;
+	v0.p = Vec3(-1, 0, 0);
+	v1.p = Vec3(1, 1, 0);
+	v2.p = Vec3(0, 0, 1);
+
+	testTri.init(v0, v1, v2, 0);
+	float t = 0.0f;
+	float u = 0.0f;
+	float v = 0.0f;
+
+	if (testTri.rayIntersectBasic(testTay, t, u, v)) {
+		std::cout << "Ray Triangle Basic Intersect correct!" << std::endl;
+		std::cout << "Distance = " << t << std::endl;
+		std::cout << "u = " << u << std::endl;
+		std::cout << "v = " << v << std::endl;
+		// t = 9.5
+	}
+	else {
+		std::cout << "Ray Triangle Basic Intersect Wrong!" << std::endl;
+	}
+}
+
+void testRayTriMollerTrumboreIntersect() {
+	Vec3 raydir = Vec3(0, -1, 0);
+	Ray testTay(Vec3(0, 10, 0), raydir);
+	Triangle testTri;
+	Vertex v0, v1, v2;
+	v0.p = Vec3(-1, 0, 0);
+	v1.p = Vec3(1, 1, 0);
+	v2.p = Vec3(0, 0, 1);
+
+	testTri.init(v0, v1, v2, 0);
+	float t = 0.0f;
+	float u = 0.0f;
+	float v = 0.0f;
+
+	if (testTri.rayIntersectMollerTrumbore(testTay, t, u, v)) {
+		std::cout << "Ray Triangle Moller-Trumbore Intersect correct!" << std::endl;
+		std::cout << "Distance = " << t << std::endl;
+		std::cout << "u = " << u << std::endl;
+		std::cout << "v = " << v << std::endl;
+		// t = 9.5
+	}
+	else {
+		std::cout << "Ray Triangle Moller-Trumbore Intersect Wrong!" << std::endl;
+	}
+}
 
 class AABB
 {
@@ -167,6 +260,11 @@ public:
 	AABB()
 	{
 		reset();
+	}
+	AABB(const Vec3& maxPoint, const Vec3& minPoint)
+	{
+		max = maxPoint;
+		min = minPoint;
 	}
 	void reset()
 	{
@@ -181,13 +279,111 @@ public:
 	// Add code here
 	bool rayAABB(const Ray& r, float& t)
 	{
-		return true;
+		float x = INFINITY;
+		float y = INFINITY;
+		float z = INFINITY;
+		// prevent parallel division
+		if (fabs(r.dir.x) > EPSILON) {
+			x = 1.0f / r.dir.x;
+		}
+		else {
+			if (r.o.x < min.x || r.o.x > max.x) {
+				return false;
+			}
+		}
+		if (fabs(r.dir.y) > EPSILON) {
+			y = 1.0f / r.dir.y;
+		}
+		else {
+			if (r.o.y < min.y || r.o.y > max.y) {
+				return false;
+			}
+		}
+		if (fabs(r.dir.z) > EPSILON) {
+			z = 1.0f / r.dir.z;
+		}
+		else {
+			if (r.o.z < min.z || r.o.z > max.z) {
+				return false;
+			}
+		}
+
+		Vec3 dinv = Vec3(x, y, z);
+		//Vec3 dinv = Vec3(1.0f / r.dir.x, 1.0f / r.dir.y, 1.0f / r.dir.z);
+		Vec3 tmin = (min - r.o) * dinv;
+		Vec3 tmax = (max - r.o) * dinv;
+
+		Vec3 tentry = Min(tmin, tmax);
+		Vec3 texit = Max(tmin, tmax);
+
+		float tentryf = std::max(tentry.x, std::max(tentry.y, tentry.z));
+		float texitf = std::min(texit.x, std::min(texit.y, texit.z));
+
+		if (texitf >= 0 && tentryf <= texitf) {
+			if (tentryf < 0) {
+				t = 0;
+			}
+			else {
+				t = tentryf;
+			}
+
+			return true;
+		}
+
+		return false;
 	}
+
 	// Add code here
 	bool rayAABB(const Ray& r)
 	{
-		return true;
+		float x = INFINITY;
+		float y = INFINITY;
+		float z = INFINITY;
+		// prevent parallel division
+		if (fabs(r.dir.x) > EPSILON) {
+			x = 1.0f / r.dir.x;
+		}
+		else {
+			if (r.o.x < min.x || r.o.x > max.x) {
+				return false;
+			}
+		}
+		if (fabs(r.dir.y) > EPSILON) {
+			y = 1.0f / r.dir.y;
+		}
+		else {
+			if (r.o.y < min.y || r.o.y > max.y) {
+				return false;
+			}
+		}
+		if (fabs(r.dir.z) > EPSILON) {
+			z = 1.0f / r.dir.z;
+		}
+		else {
+			if (r.o.z < min.z || r.o.z > max.z) {
+				return false;
+			}
+		}
+
+		Vec3 dinv = Vec3(x, y, z);
+		//Vec3 dinv = Vec3(1.0f / r.dir.x, 1.0f / r.dir.y, 1.0f / r.dir.z);
+		Vec3 tmin = (min - r.o) * dinv;
+		Vec3 tmax = (max - r.o) * dinv;
+
+		Vec3 tentry = Min(tmin, tmax);
+		Vec3 texit = Max(tmin, tmax);
+
+		float tentryf = std::max(tentry.x, std::max(tentry.y, tentry.z));
+		float texitf = std::min(texit.x, std::min(texit.y, texit.z));
+
+		if (texitf >= 0 && tentryf <= texitf) {
+			//if (tentryf < 0) { }
+			return true;
+		}
+
+		return false;
 	}
+
 	// Add code here
 	float area()
 	{
@@ -195,6 +391,29 @@ public:
 		return ((size.x * size.y) + (size.y * size.z) + (size.x * size.z)) * 2.0f;
 	}
 };
+
+void testRayAABB() {
+	Vec3 raydir = Vec3(0, -1, 0);
+	Ray testTay(Vec3(0, 10, 0), raydir);
+	AABB testBox(Vec3(1, 1, 1), Vec3(-1, -1, -1));
+	float t = 0.0f;
+
+	if (testBox.rayAABB(testTay, t) && testBox.rayAABB(testTay)) {
+		std::cout << "Ray AABB Intersect correct!" << std::endl;
+		std::cout << "Distance = " << t << std::endl;
+		// t = 9
+	}
+	else {
+		std::cout << "Ray AABB Intersect Wrong!" << std::endl;
+	}
+
+	if (testBox.area() == 24) {
+		std::cout << "AABB area correct!" << std::endl;
+	}
+	else {
+		std::cout << "AABB area wrong!" << std::endl;
+	}
+}
 
 class Sphere
 {
@@ -209,9 +428,60 @@ public:
 	// Add code here
 	bool rayIntersect(Ray& r, float& t)
 	{
-		return false;
+
+		Vec3 l = r.o - centre;
+		float b = l.dot(r.dir);
+		float c = l.dot(l) - radius * radius;
+		float dis = b * b - c;
+		if (dis < 0) {
+			return false;
+		}
+		else if (dis == 0) {
+			t = -b;
+			return true;
+		}
+		else {
+			float t1 = -b - sqrtf(dis);
+			float t2 = -b + sqrtf(dis);
+
+			if (t2 < 0) {
+				return false;
+			}
+			else {
+				if (t1 > 0) {
+					t = t1;
+				}
+				else {
+					t = 0;
+				}
+				return true;
+			}
+
+		}
+
 	}
 };
+
+void testRaySphere() {
+	Vec3 raydir = Vec3(0, -1, 0);
+	Ray testTay(Vec3(0, 10, 0), raydir.normalize());
+	Sphere testSphere;
+	Vec3 center = Vec3(0, 0, 0);
+	testSphere.init(center, 2);
+
+	float t = 0.0f;
+
+	if (testSphere.rayIntersect(testTay, t)) {
+		std::cout << "Ray Sphere Intersect correct!" << std::endl;
+		std::cout << "Distance = " << t << std::endl;
+		// t = 8
+	}
+	else {
+		std::cout << "Ray Sphere Intersect Wrong!" << std::endl;
+	}
+
+}
+
 
 struct IntersectionData
 {
@@ -227,26 +497,153 @@ struct IntersectionData
 #define TRIANGLE_COST 2.0f
 #define BUILD_BINS 32
 
+#define BUILD_DEPTH 32
+
 class BVHNode
 {
 public:
 	AABB bounds;
-	BVHNode* r;
-	BVHNode* l;
+	BVHNode* r; // left sub node
+	BVHNode* l; // rigth sub node
 	// This can store an offset and number of triangles in a global triangle list for example
 	// But you can store this however you want!
-	// unsigned int offset;
-	// unsigned char num;
+	unsigned int offset;
+	unsigned int start;
+	unsigned int triNum;
 	BVHNode()
 	{
 		r = NULL;
 		l = NULL;
+		start = 0;
+		triNum = 0;
 	}
 	// Note there are several options for how to implement the build method. Update this as required
-	void build(std::vector<Triangle>& inputTriangles)
+	void build(std::vector<Triangle>& inputTriangles, std::vector<unsigned int>& triIndex, unsigned int _start, unsigned int end, unsigned int depth)
 	{
 		// Add BVH building code here
+		start = _start;
+		triNum = end - _start;
+
+		// get the box for this node
+		bounds.reset();
+		for (unsigned int i = start; i < end; i++) {
+			unsigned int triId = triIndex[i];
+			bounds.extend(inputTriangles[triId].vertices[0].p);
+			bounds.extend(inputTriangles[triId].vertices[1].p);
+			bounds.extend(inputTriangles[triId].vertices[2].p);
+		}
+
+		// check if this is a leaf by triNum or depth
+		if (triNum <= MAXNODE_TRIANGLES || depth > BUILD_DEPTH) {
+			l = nullptr;
+			r = nullptr;
+			return;
+		}
+
+
+		float minCost = FLT_MAX; // record the minimum cost
+		int optAxis = -1; // the optimised axis to cut
+		// {0,1,2} -> {x,y,z}
+		float optPos = 0.0f; // the optimised position to cut
+
+		Vec3 boxSize = bounds.max - bounds.min;
+
+		// go through x,y,z axises to update cut with lower cost
+		for (unsigned int axis = 0; axis < 3; axis++) {
+			int step = BUILD_BINS;
+			float minPos = bounds.min.coords[axis];
+			float maxPos = bounds.max.coords[axis];
+			float range = maxPos - minPos;
+
+			// if the axis size is too small ignore
+			if (fabs(range) < EPSILON) continue;
+
+			// go through all stide ( 1 to step-1)
+			for (int s = 1; s < step; s++) {
+				float frac = float(s) / float(step);
+				float cutPos = minPos + range * frac;
+
+				// cut left and rigth box, count
+				AABB leftBounds, rightBounds;
+				leftBounds.reset();
+				rightBounds.reset();
+				int leftTriNum = 0;
+				int rightTriNum = 0;
+				for (unsigned int i = start; i < end; i++) {
+					unsigned int triId = triIndex[i];
+					Vec3 center = inputTriangles[triId].centre();
+					if (center.coords[axis] < cutPos) {
+						leftTriNum++;
+						leftBounds.extend(inputTriangles[triId].vertices[0].p);
+						leftBounds.extend(inputTriangles[triId].vertices[1].p);
+						leftBounds.extend(inputTriangles[triId].vertices[2].p);
+					}
+					else {
+						rightTriNum++;
+						rightBounds.extend(inputTriangles[triId].vertices[0].p);
+						rightBounds.extend(inputTriangles[triId].vertices[1].p);
+						rightBounds.extend(inputTriangles[triId].vertices[2].p);
+					}
+				}
+
+				// if either box is empty, skip this stride
+				if (rightTriNum == 0 || leftTriNum == 0) continue;
+
+				// calculate the cost
+				float parentAreaInv = 1.0f / bounds.area();
+				float leftArea = leftBounds.area();
+				float rightArea = rightBounds.area();
+
+				float cost = TRAVERSE_COST + parentAreaInv * TRIANGLE_COST * (leftArea * leftTriNum + rightArea * rightTriNum);
+
+				// update
+				if (cost < minCost) {
+					minCost = cost;
+					optAxis = axis;
+					optPos = cutPos;
+				}
+			}
+
+		}
+
+		// if not found a cut with lower cost, stop
+		if (optAxis < 0) {
+			l = nullptr;
+			r = nullptr;
+			return;
+		}
+
+
+		// seperate the triangles
+
+		unsigned int middle = start;
+		for (unsigned int i = start; i < end; i++) {
+			unsigned int triId = triIndex[i];
+			Vec3 center = inputTriangles[triId].centre();
+			// if center at the cut axis is small than the cut position -> left
+			if (center.coords[optAxis] < optPos) {
+				// swap it to the left
+				std::swap(triIndex[middle], triIndex[i]);
+				middle++;
+			}
+		}
+
+		// empty cut
+		if (middle == start || middle == end) {
+			l = nullptr;
+			r = nullptr;
+			return;
+		}
+
+		// Recursion build left and right
+
+		l = new BVHNode();
+		l->build(inputTriangles, triIndex, start, middle, depth + 1);
+
+		r = new BVHNode();
+		r->build(inputTriangles, triIndex, middle, end, depth + 1);
 	}
+
 	void traverse(const Ray& ray, const std::vector<Triangle>& triangles, IntersectionData& intersection)
 	{
 		// Add BVH Traversal code here
@@ -264,3 +661,4 @@ public:
 		return true;
 	}
 };
+

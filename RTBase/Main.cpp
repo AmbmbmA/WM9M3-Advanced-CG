@@ -10,12 +10,18 @@
 void runTests()
 {
 	// Add test code here
+	
+	//testRayPlaneIntersect();
+	//testRayTriBasicIntersect();
+	//testRayTriMollerTrumboreIntersect();
+	//testRayAABB();
+	//testRaySphere();
 }
 
 int main(int argc, char *argv[])
 {
 	// Add call to tests if required
-	// runTests()
+	runTests();
 	
 	// Initialize default parameters
 	std::string sceneName = "cornell-box";

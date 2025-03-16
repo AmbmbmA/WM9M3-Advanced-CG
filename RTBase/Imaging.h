@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core.h"
 #define STB_IMAGE_IMPLEMENTATION
@@ -179,8 +179,11 @@ class MitchellNetravaliFilter : public ImageFilter {
 
 	float B = 1.0f / 3.0f;
 	float C = 1.0f / 3.0f;
-	float r = 2.0f;
 
+	//float B = 0.0f;
+	//float C = 0.5f;
+
+	float r = 2.0f;
 
 	float M(float d, float r) const {
 
@@ -247,7 +250,6 @@ public:
 
 	void Filmic(unsigned char& r, unsigned char& g, unsigned char& b) {
 		float w = 11.2;
-
 		
 		r = std::min(powf((C(std::max(c->r, 0.0f)) / C(w)), 1.0f / 2.2f) * 255, 255.0f);
 		g = std::min(powf((C(std::max(c->g, 0.0f)) / C(w)), 1.0f / 2.2f) * 255, 255.0f);
@@ -288,19 +290,17 @@ public:
 		}
 	}
 
+
 	void tonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
 	{
 
 		Colour pixel = film[y * width + x] * exposure / (float)SPP;
-
 
 		ToneMap tm(&pixel);
 
 		//tm.basic(r, g, b);
 		//tm.ReinhardGlobal(r, g, b);
 		tm.Filmic(r, g, b);
-
-
 
 		// Return a tonemapped pixel at coordinates x, y
 	}
