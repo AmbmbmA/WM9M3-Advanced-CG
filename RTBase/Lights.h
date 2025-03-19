@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core.h"
 #include "Geometry.h"
@@ -6,6 +6,7 @@
 #include "Sampling.h"
 
 #pragma warning( disable : 4244)
+
 
 class Light
 {
@@ -91,20 +92,36 @@ public:
 	}
 };
 
+
 class EnvironmentMap : public Light
 {
 public:
 	Texture* env;
+	TabulatedDistributionEnv* tabuDist;
+
+
 	EnvironmentMap(Texture* _env)
 	{
 		env = _env;
+		tabuDist = new TabulatedDistributionEnv(_env);
 	}
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
-		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
-		pdf = SamplingDistributions::uniformSpherePDF(wi);
+		
+		//Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
+		//pdf = SamplingDistributions::uniformSpherePDF(wi);
+
+		float u, v;
+		tabuDist->sample(sampler->next(), sampler->next(), u, v, pdf);
+		float theta = v * M_PI;
+		float phi = u * 2.0f * M_PI;
+
+		float sinTheta = sin(theta);
+		Vec3 wi(sinTheta * cos(phi), cos(theta), sinTheta * sin(phi));
+
 		reflectedColour = evaluate(shadingData, wi);
+
 		return wi;
 	}
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
@@ -118,8 +135,31 @@ public:
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Assignment: Update this code to return the correct PDF of luminance weighted importance sampling
-		return SamplingDistributions::uniformSpherePDF(wi);
+
+		// transfer back to u,v
+
+		// acos range [-1,1]
+		float y = wi.y;
+		if (y < -1) {
+			y = -1;
+		}
+		else if (y > 1) {
+			y = 1;
+		}
+
+		float theta = acosf(y);
+
+		float phi = atan2f(wi.z, wi.x);
+
+		// atan2f range[ -pi, pi]
+		if (phi < 0.0f) phi += 2.0f * M_PI;
+
+		float u = phi / (2.0f * M_PI);
+		float v = theta / M_PI;
+
+		return tabuDist->getPDF(u, v);
 	}
+
 	bool isArea()
 	{
 		return false;

@@ -82,7 +82,7 @@ void testRayPlaneIntersect() {
 
 
 //#define EPSILON 0.001f
-#define EPSILON 1e-10f
+#define EPSILON 1e-7f
 
 class Triangle
 {
@@ -696,13 +696,14 @@ public:
 		traverse(ray, triangles, triIndex, intersection);
 		return intersection;
 	}
-	bool traverseVisible(const Ray& ray, const std::vector<Triangle>& triangles, std::vector<unsigned int>& triIndex,const float maxT)
+	bool traverseVisible(const Ray& ray, const std::vector<Triangle>& triangles, const std::vector<unsigned int>& triIndex,const float maxT)
 	{
+		//return true;
 		// Add visibility code here
 		float tbox;
 
 		// if intersect the node or too far
-		if (!bounds.rayAABB(ray, tbox) || tbox > maxT) return false;
+		if (!bounds.rayAABB(ray, tbox) || tbox > maxT) return true;
 
 		// if leaf
 		if (!l && !r) {
@@ -715,19 +716,19 @@ public:
 				float v;
 				if (triangles[triId].rayIntersectMollerTrumbore(ray, t, u, v))
 				{
-					if (t < maxT && t > 0.0f)
+					if (t < maxT && t >= 0.0f)
 					{
-						return true;
+						return false;
 					}
 				}
 
 			}
-			return false;
+			return true;
 		}
 
-		if (l && l->traverseVisible(ray, triangles, triIndex, maxT)) return true;
-		if (r && r->traverseVisible(ray, triangles, triIndex, maxT)) return true;
+		if (l && !l->traverseVisible(ray, triangles, triIndex, maxT)) return false;
+		if (r && !r->traverseVisible(ray, triangles, triIndex, maxT)) return false;
 
-		return false;
+		return true;
 	}
 };

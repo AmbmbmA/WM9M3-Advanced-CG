@@ -244,13 +244,15 @@ public:
 
 
 	void LinerWithGammaExpose(unsigned char& r, unsigned char& g, unsigned char& b) {
-	
+		r = std::min(powf((std::max(c->r, 0.0f)) * powf(2, M_E), 1.0f / 2.2f) * 255, 255.0f);
+		g = std::min(powf((std::max(c->g, 0.0f)) * powf(2, M_E), 1.0f / 2.2f) * 255, 255.0f);
+		b = std::min(powf((std::max(c->b, 0.0f)) * powf(2, M_E), 1.0f / 2.2f) * 255, 255.0f);
 	}
 
 
 	void Filmic(unsigned char& r, unsigned char& g, unsigned char& b) {
 		float w = 11.2;
-		
+
 		r = std::min(powf((C(std::max(c->r, 0.0f)) / C(w)), 1.0f / 2.2f) * 255, 255.0f);
 		g = std::min(powf((C(std::max(c->g, 0.0f)) / C(w)), 1.0f / 2.2f) * 255, 255.0f);
 		b = std::min(powf((C(std::max(c->b, 0.0f)) / C(w)), 1.0f / 2.2f) * 255, 255.0f);
@@ -300,6 +302,7 @@ public:
 
 		//tm.basic(r, g, b);
 		//tm.ReinhardGlobal(r, g, b);
+		//tm.LinerWithGammaExpose(r, g, b);
 		tm.Filmic(r, g, b);
 
 		// Return a tonemapped pixel at coordinates x, y

@@ -24,14 +24,14 @@ int main(int argc, char *argv[])
 	runTests();
 	
 	// Initialize default parameters
-	//std::string sceneName = "cornell-box";
+	std::string sceneName = "cornell-box";
 	//std::string sceneName = "MaterialsScene";
 	//std::string sceneName = "classroom";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bedroom";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bathroom";
-	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/coffee";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bathroom2";
-	std::string sceneName = "../../COURSE_RESOURCE/Scenes1/kitchen";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/coffee";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/kitchen";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Sibenik";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Terrain";
 	std::string filename = "GI.hdr";
@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 
 	if (argc > 1)
 	{
+
 		std::unordered_map<std::string, std::string> args;
 		for (int i = 1; i < argc; ++i)
 		{

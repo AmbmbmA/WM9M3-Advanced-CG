@@ -123,7 +123,11 @@ public:
 
 	Light* sampleLight(Sampler* sampler, float& pmf)
 	{
-		return NULL;
+
+		pmf = 1.0f / lights.size();
+		int index = std::min((int)(lights.size() * sampler->next()), (int)(lights.size() - 1));
+
+		return lights[index];
 	}
 	// Do not modify any code below this line
 	void init(std::vector<Triangle> meshTriangles, std::vector<BSDF*> meshMaterials, Light* _background)
@@ -149,10 +153,10 @@ public:
 	{
 		Ray ray;
 		Vec3 dir = p2 - p1;
-		float maxT = dir.length() - (2.0f * EPSILON);
+		float maxT = dir.length() - (2.0f * 0.001f);
 		dir = dir.normalize();
-		ray.init(p1 + (dir * EPSILON), dir);
-		return bvh->traverseVisible(ray, triangles, triIndex,maxT);
+		ray.init(p1 + (dir * 0.001f), dir);
+		return bvh->traverseVisible(ray, triangles, triIndex, maxT);
 	}
 	Colour emit(Triangle* light, ShadingData shadingData, Vec3 wi)
 	{
