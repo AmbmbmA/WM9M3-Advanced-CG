@@ -289,6 +289,6 @@ Scene* loadScene(std::string sceneName)
 	scene->init(meshTriangles, meshMaterials, background);
 	//viewcamera.movespeed = (scene->bounds.max - scene->bounds.min).length() * 0.05f;
 	viewcamera.movespeed = (scene->bounds.max - scene->bounds.min).length() * MOVESENSITY;
-	scene->build();
+	scene->build(sceneName);
 	return scene;
 }

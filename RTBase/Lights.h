@@ -108,9 +108,68 @@ public:
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
+
+		float rand = sampler->next();
 		
+		if (rand < 0.5f) {
+			Vec3 wi1 = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
+			float pdf11 = SamplingDistributions::uniformSpherePDF(wi1);
+			Colour reflectedColour1 = evaluate(shadingData, wi1);
+
+			float y = wi1.y;
+			if (y < -1) {
+				y = -1;
+			}
+			else if (y > 1) {
+				y = 1;
+			}
+
+			float theta = acosf(y);
+			float phi = atan2f(wi1.z, wi1.x);
+
+			// atan2f range[ -pi, pi]
+			if (phi < 0.0f) phi += 2.0f * M_PI;
+
+			float u = phi / (2.0f * M_PI);
+			float v = theta / M_PI;
+			float pdf12 = tabuDist->getPDF(u, v);
+
+			float pTotal1 = pdf11 + pdf12;
+
+			if (pTotal1 > 0.0f) {
+				reflectedColour = reflectedColour1 * pdf11 / pTotal1;
+			}
+			return wi1;
+		}
+		else {
+			float u, v;
+			float pdf21 = 0;
+			tabuDist->sample(sampler->next(), sampler->next(), u, v, pdf21);
+			float theta = v * M_PI;
+			float phi = u * 2.0f * M_PI;
+
+			float sinTheta = sin(theta);
+			Vec3 wi2(sinTheta * cos(phi), cos(theta), sinTheta * sin(phi));
+			Colour reflectedColour2 = evaluate(shadingData, wi2);
+
+			float pdf22 = SamplingDistributions::uniformSpherePDF(wi2);
+
+			float pTotal2 = pdf21 + pdf22;
+
+			if (pTotal2 > 0.0f) {
+				reflectedColour = reflectedColour2 * pdf21 / pTotal2;
+			}
+			return wi2;
+		}
+
+	}
+	Vec3 sample1(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	{
+		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
+
 		//Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
-		//pdf = SamplingDistributions::uniformSpherePDF(wi);
+		//float pdf = SamplingDistributions::uniformSpherePDF(wi);
+		//reflectedColour = evaluate(shadingData, wi);
 
 		float u, v;
 		tabuDist->sample(sampler->next(), sampler->next(), u, v, pdf);
@@ -119,8 +178,8 @@ public:
 
 		float sinTheta = sin(theta);
 		Vec3 wi(sinTheta * cos(phi), cos(theta), sinTheta * sin(phi));
-
 		reflectedColour = evaluate(shadingData, wi);
+
 
 		return wi;
 	}

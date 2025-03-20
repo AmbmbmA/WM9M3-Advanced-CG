@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 	runTests();
 	
 	// Initialize default parameters
-	std::string sceneName = "cornell-box";
+	//std::string sceneName = "cornell-box";
 	//std::string sceneName = "MaterialsScene";
 	//std::string sceneName = "classroom";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bedroom";
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/coffee";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/kitchen";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Sibenik";
-	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Terrain";
+	std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Terrain";
 	std::string filename = "GI.hdr";
 	unsigned int SPP = 8192;
 

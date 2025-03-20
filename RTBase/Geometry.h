@@ -389,6 +389,7 @@ public:
 		Vec3 size = max - min;
 		return ((size.x * size.y) + (size.y * size.z) + (size.x * size.z)) * 2.0f;
 	}
+
 };
 
 void testRayAABB() {
@@ -731,4 +732,5 @@ public:
 
 		return true;
 	}
+
 };

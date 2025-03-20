@@ -54,9 +54,20 @@ public:
 	std::vector<unsigned int> triIndex;
 	Camera camera;
 	AABB bounds;
-	void build()
+	void build(std::string sceneName)
 	{
+
 		// Add BVH building code here
+		
+		// load
+		//std::string bvhFileName;
+		//size_t pos = sceneName.rfind('/');
+		//if (pos != std::string::npos) {
+		//	bvhFileName = sceneName.substr(pos + 1) + "_bvh";
+		//}
+		//else {
+		//	bvhFileName = sceneName + "_bvh";
+		//}
 
 		if (bvh == nullptr) {
 			bvh = new BVHNode();
