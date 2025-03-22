@@ -88,7 +88,6 @@ public:
 		bvh->build(triangles, triIndex, 0, tempTriSize, 0);
 
 
-
 		// Do not touch the code below this line!
 		// Build light list
 		for (int i = 0; i < triangles.size(); i++)

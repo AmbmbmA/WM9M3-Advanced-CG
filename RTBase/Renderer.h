@@ -13,7 +13,7 @@
 #include <mutex>
 
 
-#define MAX_DEPTH_PathT 3
+#define MAX_DEPTH_PathT 8
 
 class RayTracer
 {
@@ -44,7 +44,8 @@ public:
 	{
 		film->clear();
 	}
-	Colour computeDirect(ShadingData shadingData, Sampler* sampler)
+	
+	Colour computeDirect2(ShadingData shadingData, Sampler* sampler)
 	{
 		// Is surface is specular we cannot computing direct lighting
 		if (shadingData.bsdf->isPureSpecular() == true)
@@ -104,7 +105,53 @@ public:
 		}
 
 	}
-
+	Colour computeDirect(ShadingData shadingData, Sampler* sampler)
+	{
+		if (shadingData.bsdf->isPureSpecular() == true)
+		{
+			return Colour(0.0f, 0.0f, 0.0f);
+		}
+		// Sample a light
+		float pmf;
+		Light* light = scene->sampleLight(sampler, pmf);
+		// Sample a point on the light
+		float pdf;
+		Colour emitted;
+		Vec3 p = light->sample(shadingData, sampler, emitted, pdf);
+		if (light->isArea())
+		{
+			// Calculate GTerm
+			Vec3 wi = p - shadingData.x;
+			float l = wi.lengthSq();
+			wi = wi.normalize();
+			float GTerm = (max(Dot(wi, shadingData.sNormal), 0.0f) * max(-Dot(wi, light->normal(shadingData, wi)), 0.0f)) / l;
+			if (GTerm > 0)
+			{
+				// Trace
+				if (scene->visible(shadingData.x, p))
+				{
+					// Shade
+					return shadingData.bsdf->evaluate(shadingData, wi) * emitted * GTerm / (pmf * pdf);
+				}
+			}
+		}
+		else
+		{
+			// Calculate GTerm
+			Vec3 wi = p;
+			float GTerm = max(Dot(wi, shadingData.sNormal), 0.0f);
+			if (GTerm > 0)
+			{
+				// Trace
+				if (scene->visible(shadingData.x, shadingData.x + (p * 10000.0f)))
+				{
+					// Shade
+					return shadingData.bsdf->evaluate(shadingData, wi) * emitted * GTerm / (pmf * pdf);
+				}
+			}
+		}
+		return Colour(0.0f, 0.0f, 0.0f);
+	}
 	Colour pathTrace1(Ray& r, Colour& pathThroughput, int depth, Sampler* sampler)
 	{
 		// Add pathtracer code here
@@ -171,6 +218,8 @@ public:
 			return computeDirect(shadingData, sampler);
 		}
 		return scene->background->evaluate(shadingData, r.dir);
+		//return Colour(0.0f, 0.0f, 0.0f);
+
 
 	}
 
@@ -305,8 +354,8 @@ public:
 				float px = x + 0.5f;
 				float py = y + 0.5f;
 				Ray ray = scene->camera.generateRay(px, py);
-				//Colour col = direct(ray, samplers);
-				Colour col = viewNormals(ray);
+				Colour col = direct(ray, samplers);
+				//Colour col = viewNormals(ray);
 				//Colour col = albedo(ray);
 
 				film->splat(px, py, col);

@@ -279,7 +279,7 @@ Scene* loadScene(std::string sceneName)
 	Light* background;
 	if (gemscene.findProperty("envmap").getValue("") != "")
 	{
-	std::cout << " Found" << std::endl;
+	std::cout << "envmap Found" << std::endl;
 		Texture* env = loadTexture(sceneName + "/" + gemscene.findProperty("envmap").getValue(""), textureManager);
 		background = new EnvironmentMap(env);
 	} else

@@ -88,7 +88,6 @@ public:
 		weightedF.resize(width * height, 0.0f);
 		conditionalCDF.resize(width * height, 0.0f);
 		marginalCDF.resize(height, 0.0f);
-
 		float rowSum = 0.0f;
 		totalSum = 0.0f;
 
@@ -131,7 +130,7 @@ public:
 		}
 	}
 
-	void sample(float r1, float r2, float& u, float& v, float pdf) const {
+	void sample(float r1, float r2, float& u, float& v, float& pdf) const {
 
 		int row = 0;
 		// binary search first CDF >= r1
@@ -140,24 +139,23 @@ public:
 		if (row >= height) row = height - 1;
 
 		int column = 0;
-		// binary search first CDF >= r1 (within the row)
+		// binary search first CDF >= r2 (within the row)
 		auto start = conditionalCDF.begin() + row * width;
 		auto end = start + width;
-		auto binSC = std::lower_bound(start, end, r1);
+		auto binSC = std::lower_bound(start, end, r2);
 		column = int(std::distance(start, binSC));
-		if (column >= width) row = width - 1;
+		if (column >= width) column = width - 1;
 
 		u = (column + 0.5f) / float(width);
 		v = (row + 0.5f) / float(height);
 
 		float sinTheta = sinf(v * M_PI);
-		float deno = 2 * M_PI * M_PI * sinTheta;
-		//float deno = (2.0f * M_PI / float(width)) * (M_PI / float(height)) * sinTheta;
+		//float deno = 2 * M_PI * M_PI * sinTheta;
+		float deno = (2.0f * M_PI / float(width)) * (M_PI / float(height)) * sinTheta;
 
-
-		if (deno > 0) {
+		if (deno > 0.0f) {
 			float wF = weightedF[row * width + column];
-			if (wF > 0) {
+			if (wF > 0.0f) {
 				pdf = wF / (totalSum * deno);
 			}
 			else {
@@ -167,6 +165,8 @@ public:
 		else {
 			pdf = 0.0f;
 		}
+
+
 	}
 
 
@@ -176,8 +176,8 @@ public:
 		int column = std::min(int(u * width), width - 1);
 
 		float sinTheta = sinf(v * M_PI);
-		float deno = 2 * M_PI * M_PI * sinTheta;
-		//float deno = (2.0f * M_PI / float(width))* (M_PI / float(height))* sinTheta;
+		//float deno = 2 * M_PI * M_PI * sinTheta;
+		float deno = (2.0f * M_PI / float(width))* (M_PI / float(height))* sinTheta;
 
 		float pdf = 0.0f;
 

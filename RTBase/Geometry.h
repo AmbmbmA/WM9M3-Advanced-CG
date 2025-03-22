@@ -147,7 +147,7 @@ public:
 		Vec3 p = d.cross(e2);
 		float det = e1r.dot(p);
 		// parallel
-		if (fabs(det) < EPSILON) return false;
+		if (fabs(det) < 1e-10f) return false;
 
 		float invdet = 1.0f / det;
 
@@ -614,7 +614,6 @@ public:
 			return;
 		}
 
-
 		// seperate the triangles
 
 		unsigned int middle = start;
@@ -697,6 +696,8 @@ public:
 		traverse(ray, triangles, triIndex, intersection);
 		return intersection;
 	}
+
+
 	bool traverseVisible(const Ray& ray, const std::vector<Triangle>& triangles, const std::vector<unsigned int>& triIndex,const float maxT)
 	{
 		//return true;
