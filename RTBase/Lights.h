@@ -106,10 +106,9 @@ public:
 		tabuDist = new TabulatedDistributionEnv(_env);
 	}
 
-	Vec3 sample3(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
-
 
 		Vec3 wi1 = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
 		float pdf1 = SamplingDistributions::uniformSpherePDF(wi1);
@@ -125,18 +124,18 @@ public:
 		Vec3 wi2(sinTheta * cosf(phi), cosf(theta), sinTheta * sinf(phi));
 		Colour reflectedColour2 = evaluate(shadingData, wi2);
 
-		float pTotal1 = pdf1 + pdf2;
+		float pTotal = pdf1 + pdf2;
 
-		pdf = pTotal1 / 2.0f;
+		pdf = pTotal;
 
-		if (pTotal1 > 0.0f) {
-			reflectedColour = (reflectedColour1 * pdf1 / pTotal1) + (reflectedColour2 * pdf2 / pTotal1);
+		if (pTotal > 0.0f) {
+			reflectedColour = (reflectedColour1 * pdf1 / pTotal) + (reflectedColour2 * pdf2 / pTotal);
 		}
 		return wi1;
 	
 
 	}
-	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	Vec3 sample1(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
 
@@ -167,7 +166,7 @@ public:
 
 			float pTotal1 = pdf11 + pdf12;
 
-			pdf = pTotal1 / 2.0f;
+			pdf = pTotal1;
 
 			if (pTotal1 > 0.0f) {
 				reflectedColour = reflectedColour1 * pdf11 / pTotal1;
@@ -189,7 +188,7 @@ public:
 
 			float pTotal2 = pdf21 + pdf22;
 
-			pdf = pTotal2 / 2.0f;
+			pdf = pTotal2;
 
 
 			if (pTotal2 > 0.0f) {
@@ -199,13 +198,9 @@ public:
 		}
 
 	}
-	Vec3 sample2(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	Vec3 sampleTabulated(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
-
-		//Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
-		//float pdf = SamplingDistributions::uniformSpherePDF(wi);
-		//reflectedColour = evaluate(shadingData, wi);
 
 		float u, v;
 		tabuDist->sample(sampler->next(), sampler->next(), u, v, pdf);
@@ -218,14 +213,13 @@ public:
 
 		return wi;
 	}
-	Vec3 sample1(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	Vec3 sampleOld(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
 
 		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
 		pdf = SamplingDistributions::uniformSpherePDF(wi);
 		reflectedColour = evaluate(shadingData, wi);
-
 
 		return wi;
 	}
@@ -237,11 +231,11 @@ public:
 		float v = acosf(wi.y) / M_PI;
 		return env->sample(u, v);
 	}
-	float PDF(const ShadingData& shadingData, const Vec3& wi)
+	float PDFOld(const ShadingData& shadingData, const Vec3& wi)
 	{
 		return SamplingDistributions::uniformSpherePDF(wi);
 	}
-	float PDF1(const ShadingData& shadingData, const Vec3& wi)
+	float PDF(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Assignment: Update this code to return the correct PDF of luminance weighted importance sampling
 
