@@ -5,8 +5,6 @@
 #include "GEMLoader.h"
 #include "Renderer.h"
 
-const float MOVESENSITY = 0.02f;
-
 class RTCamera
 {
 public:
@@ -18,7 +16,7 @@ public:
 	float rotspeed = 5.0f;
 	RTCamera()
 	{
-		rotspeed = 5.0f / 3;
+		rotspeed = 5.0f;
 	}
 	void forward()
 	{
@@ -279,7 +277,7 @@ Scene* loadScene(std::string sceneName)
 	Light* background;
 	if (gemscene.findProperty("envmap").getValue("") != "")
 	{
-	std::cout << "envmap Found" << std::endl;
+		std::cout << "envmap Found" << std::endl;
 		Texture* env = loadTexture(sceneName + "/" + gemscene.findProperty("envmap").getValue(""), textureManager);
 		background = new EnvironmentMap(env);
 	} else
@@ -287,8 +285,9 @@ Scene* loadScene(std::string sceneName)
 		background = new BackgroundColour(Colour(0.0f, 0.0f, 0.0f));
 	}
 	scene->init(meshTriangles, meshMaterials, background);
-	//viewcamera.movespeed = (scene->bounds.max - scene->bounds.min).length() * 0.05f;
-	viewcamera.movespeed = (scene->bounds.max - scene->bounds.min).length() * MOVESENSITY;
+	viewcamera.movespeed = (scene->bounds.max - scene->bounds.min).length() * 0.05f;
 	scene->build(sceneName);
+	use<SceneBounds>().sceneCentre = (scene->bounds.max + scene->bounds.min) * 0.5f;
+	use<SceneBounds>().sceneRadius = (scene->bounds.max - use<SceneBounds>().sceneCentre).length();
 	return scene;
 }

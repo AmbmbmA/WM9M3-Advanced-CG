@@ -147,15 +147,21 @@ public:
 			}
 			Colour bsdf;
 			float pdf;
-			Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
-			pdf = SamplingDistributions::cosineHemispherePDF(wi);
-			wi = shadingData.frame.toWorld(wi);
-			bsdf = shadingData.bsdf->evaluate(shadingData, wi);
+
+			//Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
+			//pdf = SamplingDistributions::cosineHemispherePDF(wi);
+			//wi = shadingData.frame.toWorld(wi);
+			//bsdf = shadingData.bsdf->evaluate(shadingData, wi);
+
+			//Colour indirect;
+			Vec3 wi = shadingData.bsdf->sample(shadingData,sampler, bsdf,pdf);
 			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
 			r.init(shadingData.x + (wi * 0.001f), wi);
 			return (direct + pathTrace(r, pathThroughput, depth + 1, sampler, shadingData.bsdf->isPureSpecular()));
 		}
 		return scene->background->evaluate(shadingData, r.dir);
+		//return Colour(0.0f, 0.0f, 0.0f);
+
 	}
 
 	Colour direct(Ray& r, Sampler* sampler)
@@ -232,8 +238,10 @@ public:
 
 		for (int y = startY; y < endY; y++) {
 			for (int x = startX; x < endX; x++) {
-				float px = x + 0.5f;
-				float py = y + 0.5f;
+				//float px = x + 0.5f;
+				//float py = y + 0.5f;				
+				float px = x + samplers->next();
+				float py = y + samplers->next();
 				Ray ray = scene->camera.generateRay(px, py);
 				//Colour col = direct(ray, samplers);
 

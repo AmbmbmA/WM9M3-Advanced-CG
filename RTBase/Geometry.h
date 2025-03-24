@@ -140,26 +140,28 @@ public:
 
 	bool rayIntersectMollerTrumbore(const Ray& r, float& t, float& u, float& v) const
 	{
-		Vec3 e1r = -e1;
-		Vec3 T = r.o - vertices[2].p;
+		Vec3 e1m = vertices[0].p - vertices[2].p;
+		Vec3 e2m = vertices[1].p - vertices[2].p;
+		Vec3 v0 = vertices[2].p;
+
+		Vec3 T = r.o - v0;
 		Vec3 d = r.dir;
 
-		Vec3 p = d.cross(e2);
-		float det = e1r.dot(p);
+		Vec3 p = d.cross(e2m);
+		float det = e1m.dot(p);
 		// parallel
-		if (fabs(det) < 1e-10f) return false;
+		if (fabs(det) < 1e-7f) return false;
 
 		float invdet = 1.0f / det;
 
 		u = T.dot(p) * invdet;
 		if (u < 0 || u > 1.0f) return false;
 
-		Vec3 q = T.cross(e1r);
+		Vec3 q = T.cross(e1m);
 		v = d.dot(q) * invdet;
 		if (v < 0 || (u + v) > 1.0f) return false;
 
-
-		t = e2.dot(q) * invdet;
+		t = e2m.dot(q) * invdet;
 
 		// if behind
 		if (t < 0) return false;

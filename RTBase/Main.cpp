@@ -21,21 +21,29 @@ void runTests()
 int main(int argc, char *argv[])
 {
 	// Add call to tests if required
-	runTests();
+	//runTests();
 	
 	// Initialize default parameters
-	std::string sceneName = "cornell-box";
-	//std::string sceneName = "MaterialsScene";
-	//std::string sceneName = "classroom";
-	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bedroom";
+	//std::string sceneName = "cornell-box";
+	std::string sceneName = "MaterialsScene";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bathroom";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bathroom2";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bedroom";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/classroom";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/coffee";
-	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/house";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/dining-room";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/glass-of-water";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/house";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/kitchen";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/living-room";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/living-room-2";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/living-room-3";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Sibenik";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/staircase";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/staircase2";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Terrain";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/veach-bidir";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/veach-mis";
 	std::string filename = "GI.hdr";
 	unsigned int SPP = 8192;
 

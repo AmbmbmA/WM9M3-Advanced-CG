@@ -56,7 +56,7 @@ public:
 	{
 
 		// Add code here
-		return wi.z / M_PI;
+		return wi.z/ M_PI;
 	}
 	static Vec3 uniformSampleSphere(float r1, float r2)
 	{
