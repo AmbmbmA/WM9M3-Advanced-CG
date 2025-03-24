@@ -256,54 +256,71 @@ public:
 		}
 	}
 
-	void render()
-	{
+	void render() {
 		film->incrementSPP();
 
 		const int filmWidth = film->width;
 		const int filmHeight = film->height;
 
 		int numCore = std::thread::hardware_concurrency();
-		const int tileSize = sqrtf(filmWidth * filmHeight / numCore);
-		//const int tileSize = 256;
+		//const int tileSize = sqrtf(filmWidth * filmHeight / numCore);
+
+		const int tileSize = 32;
 
 		int numTilesX = (filmWidth + tileSize - 1) / tileSize;
 		int numTilesY = (filmHeight + tileSize - 1) / tileSize;
+		int totalTiles = numTilesX * numTilesY;
+
+		//int numCore = numTilesX * numTilesY;
+
+		// atomic counter
+		std::atomic<int> nextTile(0);
 
 		std::vector<std::thread> threads;
-		threads.reserve(numTilesX * numTilesY);
+		threads.reserve(numCore);
 
 		// multi-thread for splatting
-		for (int tileY = 0; tileY < numTilesY; tileY++)
-		{
-			for (int tileX = 0; tileX < numTilesX; tileX++)
-			{
-				threads.emplace_back(&RayTracer::splatTileBased, this, tileX, tileY, tileSize, filmWidth, filmHeight);
+		auto Splat = [&]() {
+			while (true) {
+				int tileIndex = nextTile.fetch_add(1);
+				if (tileIndex >= totalTiles)
+					break;
+				int tileX = tileIndex % numTilesX;
+				int tileY = tileIndex / numTilesX;
+				splatTileBased(tileX, tileY, tileSize, filmWidth, filmHeight);
 			}
-		}
+		};
 
-		for (auto& t : threads)
-		{
+		for (int i = 0; i < numCore; i++) {
+			threads.emplace_back(Splat);
+		}
+		for (auto& t : threads) {
 			if (t.joinable())
 				t.join();
 		}
-
 		threads.clear();
 
 		// multi thread for render
-		for (int tileY = 0; tileY < numTilesY; tileY++)
-		{
-			for (int tileX = 0; tileX < numTilesX; tileX++)
-			{
-				threads.emplace_back(&RayTracer::renderTileBased, this, tileX, tileY, tileSize, filmWidth, filmHeight);
+
+		nextTile = 0; //reset atomic
+		auto Render = [&]() {
+			while (true) {
+				int tileIndex = nextTile.fetch_add(1);
+				if (tileIndex >= totalTiles)
+					break;
+				int tileX = tileIndex % numTilesX;
+				int tileY = tileIndex / numTilesX;
+				renderTileBased(tileX, tileY, tileSize, filmWidth, filmHeight);
 			}
+		};
+
+		for (int i = 0; i < numCore; i++) {
+			threads.emplace_back(Render);
 		}
-		for (auto& t : threads)
-		{
+		for (auto& t : threads) {
 			if (t.joinable())
 				t.join();
 		}
-
 	}
 
 	void renderOld()

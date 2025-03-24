@@ -494,12 +494,12 @@ struct IntersectionData
 	float gamma;
 };
 
-#define MAXNODE_TRIANGLES 8
+#define MAXNODE_TRIANGLES 4
 #define TRAVERSE_COST 1.0f
 #define TRIANGLE_COST 2.0f
 #define BUILD_BINS 32
 
-#define BUILD_DEPTH 32
+#define BUILD_DEPTH 20
 
 class BVHNode
 {

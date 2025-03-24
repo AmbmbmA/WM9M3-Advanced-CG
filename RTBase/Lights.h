@@ -140,10 +140,36 @@ public:
 	EnvironmentMap(Texture* _env)
 	{
 		env = _env;
-		//tabuDist = new TabulatedDistributionEnv(_env);
+		tabuDist = new TabulatedDistributionEnv(_env);
 	}
 
-	Vec3 sample2(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	{
+		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
+
+		float u, v;
+		tabuDist->sample(sampler->next(), sampler->next(), u, v, pdf);
+		float theta = v * M_PI;
+		float phi = u * 2.0f * M_PI;
+
+		float sinTheta = sinf(theta);
+		Vec3 wi(sinTheta * cosf(phi), cosf(theta), sinTheta * sinf(phi));
+		reflectedColour = evaluate(shadingData, wi);
+
+		return wi;
+	}
+	Vec3 sampleOld(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	{
+		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
+
+		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
+		pdf = SamplingDistributions::uniformSpherePDF(wi);
+		reflectedColour = evaluate(shadingData, wi);
+
+		return wi;
+	}
+
+	Vec3 sampleMISWrong2(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
 
@@ -177,7 +203,7 @@ public:
 	
 
 	}
-	Vec3 sample1(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	Vec3 sampleMISWrong1(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
 
@@ -240,31 +266,7 @@ public:
 		}
 
 	}
-	Vec3 sample11(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
-	{
-		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
 
-		float u, v;
-		tabuDist->sample(sampler->next(), sampler->next(), u, v, pdf);
-		float theta = v * M_PI;
-		float phi = u * 2.0f * M_PI;
-
-		float sinTheta = sinf(theta);
-		Vec3 wi(sinTheta * cosf(phi), cosf(theta), sinTheta * sinf(phi));
-		reflectedColour = evaluate(shadingData, wi);
-
-		return wi;
-	}
-	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
-	{
-		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
-
-		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
-		pdf = SamplingDistributions::uniformSpherePDF(wi);
-		reflectedColour = evaluate(shadingData, wi);
-
-		return wi;
-	}
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
 	{
 		float u = atan2f(wi.z, wi.x);
@@ -302,9 +304,7 @@ public:
 		float u = phi / (2.0f * M_PI);
 		float v = theta / M_PI;
 
-		float pdf = SamplingDistributions::uniformSpherePDF(wi);
-
-		return tabuDist->getPDF(u, v) + pdf;
+		return tabuDist->getPDF(u, v);
 	}
 
 	bool isArea()
