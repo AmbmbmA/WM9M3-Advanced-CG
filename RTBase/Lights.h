@@ -350,8 +350,7 @@ public:
 
 		float sinTheta = sinf(theta);
 		Vec3 wi(sinTheta * cosf(phi), cosf(theta), sinTheta * sinf(phi));
-
-		return -wi;
+		return wi;
 
 		//Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
 		//pdf = SamplingDistributions::uniformSpherePDF(wi);
