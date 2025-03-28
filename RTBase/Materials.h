@@ -106,6 +106,7 @@ public:
 	}
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
 	{
+
 		return albedo->sample(shadingData.tu, shadingData.tv) / M_PI;
 	}
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
@@ -137,6 +138,7 @@ public:
 	{
 		albedo = _albedo;
 	}
+
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Replace this with Mirror sampling code
@@ -145,11 +147,13 @@ public:
 		Vec3 wi = shadingData.frame.toWorld(wr);
 		pdf = 1;
 		reflectedColour = albedo->sample(shadingData.tu, shadingData.tv) / wr.z;
+
 		return wi;
 	}
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Replace this with Mirror evaluation code
+
 		return albedo->sample(shadingData.tu, shadingData.tv) / wi.dot(shadingData.sNormal);
 	}
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
@@ -246,6 +250,7 @@ public:
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Replace this with Glass evaluation code
+
 		return albedo->sample(shadingData.tu, shadingData.tv) / M_PI;
 	}
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
@@ -340,6 +345,7 @@ public:
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Replace this with OrenNayar evaluation code
+
 		return albedo->sample(shadingData.tu, shadingData.tv) / M_PI;
 	}
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
@@ -393,6 +399,7 @@ public:
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Replace this with Plastic evaluation code
+
 		return albedo->sample(shadingData.tu, shadingData.tv) / M_PI;
 	}
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
@@ -440,6 +447,7 @@ public:
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Add code for evaluation of layer
+
 		return base->evaluate(shadingData, wi);
 	}
 	float PDF(const ShadingData& shadingData, const Vec3& wi)

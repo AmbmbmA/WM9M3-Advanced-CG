@@ -20,10 +20,11 @@ class Light
 {
 public:
 	virtual Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& emittedColour, float& pdf) = 0;
-	virtual Colour evaluate(const ShadingData& shadingData, const Vec3& wi) = 0;
+	//virtual Colour evaluate(const ShadingData& shadingData, const Vec3& wi) = 0;
+	virtual Colour evaluate(const Vec3& wi) = 0;
 	virtual float PDF(const ShadingData& shadingData, const Vec3& wi) = 0;
 	virtual bool isArea() = 0;
-	virtual Vec3 normal(const ShadingData& shadingData, const Vec3& wi) = 0;
+	virtual Vec3 normal(const Vec3& wi) = 0;
 	virtual float totalIntegratedPower() = 0;
 	virtual Vec3 samplePositionFromLight(Sampler* sampler, float& pdf) = 0;
 	virtual Vec3 sampleDirectionFromLight(Sampler* sampler, float& pdf) = 0;
@@ -39,7 +40,7 @@ public:
 		emittedColour = emission;
 		return triangle->sample(sampler, pdf);
 	}
-	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
+	Colour evaluate(const Vec3& wi)
 	{
 		if (Dot(wi, triangle->gNormal()) < 0)
 		{
@@ -55,7 +56,7 @@ public:
 	{
 		return true;
 	}
-	Vec3 normal(const ShadingData& shadingData, const Vec3& wi)
+	Vec3 normal(const Vec3& wi)
 	{
 		return triangle->gNormal();
 	}
@@ -70,8 +71,9 @@ public:
 	Vec3 sampleDirectionFromLight(Sampler* sampler, float& pdf)
 	{
 		// Add code to sample a direction from the light
-		Vec3 wi = Vec3(0, 0, 1);
-		pdf = 1.0f;
+		//Vec3 wi = Vec3(0, 0, 1);
+		Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
+		pdf = SamplingDistributions::cosineHemispherePDF(wi);
 		Frame frame;
 		frame.fromVector(triangle->gNormal());
 		return frame.toWorld(wi);
@@ -93,7 +95,7 @@ public:
 		reflectedColour = emission;
 		return wi;
 	}
-	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
+	Colour evaluate(const Vec3& wi)
 	{
 		return emission;
 	}
@@ -105,7 +107,7 @@ public:
 	{
 		return false;
 	}
-	Vec3 normal(const ShadingData& shadingData, const Vec3& wi)
+	Vec3 normal(const Vec3& wi)
 	{
 		return -wi;
 	}
@@ -154,7 +156,7 @@ public:
 
 		float sinTheta = sinf(theta);
 		Vec3 wi(sinTheta * cosf(phi), cosf(theta), sinTheta * sinf(phi));
-		reflectedColour = evaluate(shadingData, wi);
+		reflectedColour = evaluate(wi);
 
 		return wi;
 	}
@@ -164,7 +166,7 @@ public:
 
 		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
 		pdf = SamplingDistributions::uniformSpherePDF(wi);
-		reflectedColour = evaluate(shadingData, wi);
+		reflectedColour = evaluate(wi);
 
 		return wi;
 	}
@@ -190,7 +192,7 @@ public:
 		float phi = u * 2.0f * M_PI;
 		float sinTheta = sinf(theta);
 		Vec3 wi2(sinTheta * cosf(phi), cosf(theta), sinTheta * sinf(phi));
-		Colour reflectedColour2 = evaluate(shadingData, wi2);
+		Colour reflectedColour2 = evaluate(wi2);
 
 		float pTotal = pdf1 + pdf2;
 
@@ -212,7 +214,7 @@ public:
 		if (rand < 0.5f) {
 			Vec3 wi1 = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
 			float pdf11 = SamplingDistributions::uniformSpherePDF(wi1);
-			Colour reflectedColour1 = evaluate(shadingData, wi1);
+			Colour reflectedColour1 = evaluate(wi1);
 
 			float y = wi1.y;
 			if (y < -1) {
@@ -250,7 +252,7 @@ public:
 
 			float sinTheta = sinf(theta);
 			Vec3 wi2(sinTheta * cosf(phi), cosf(theta), sinTheta * sinf(phi));
-			Colour reflectedColour2 = evaluate(shadingData, wi2);
+			Colour reflectedColour2 = evaluate(wi2);
 
 			float pdf22 = SamplingDistributions::uniformSpherePDF(wi2);
 
@@ -267,7 +269,7 @@ public:
 
 	}
 
-	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
+	Colour evaluate(const Vec3& wi)
 	{
 		float u = atan2f(wi.z, wi.x);
 		u = (u < 0.0f) ? u + (2.0f * M_PI) : u;
@@ -311,7 +313,7 @@ public:
 	{
 		return false;
 	}
-	Vec3 normal(const ShadingData& shadingData, const Vec3& wi)
+	Vec3 normal(const Vec3& wi)
 	{
 		return -wi;
 	}
@@ -341,8 +343,18 @@ public:
 	Vec3 sampleDirectionFromLight(Sampler* sampler, float& pdf)
 	{
 		// Replace this tabulated sampling of environment maps
-		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
-		pdf = SamplingDistributions::uniformSpherePDF(wi);
-		return wi;
+		float u, v;
+		tabuDist->sample(sampler->next(), sampler->next(), u, v, pdf);
+		float theta = v * M_PI;
+		float phi = u * 2.0f * M_PI;
+
+		float sinTheta = sinf(theta);
+		Vec3 wi(sinTheta * cosf(phi), cosf(theta), sinTheta * sinf(phi));
+
+		return -wi;
+
+		//Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
+		//pdf = SamplingDistributions::uniformSpherePDF(wi);
+		//return wi;
 	}
 };

@@ -177,11 +177,11 @@ public:
 
 class MitchellNetravaliFilter : public ImageFilter {
 
-	//float B = 1.0f / 3.0f;
-	//float C = 1.0f / 3.0f;
+	float B = 1.0f / 3.0f;
+	float C = 1.0f / 3.0f;
 
-	float B = 0.0f;
-	float C = 0.5f;
+	//float B = 0.0f;
+	//float C = 0.5f;
 
 	float r = 2.0f;
 
