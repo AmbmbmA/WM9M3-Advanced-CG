@@ -229,7 +229,7 @@ public:
 	}
 };
 
-#define mirrorEdge 0.05f
+#define mirrorEdge 0.1f
 class ConductorBSDF : public BSDF
 {
 public:

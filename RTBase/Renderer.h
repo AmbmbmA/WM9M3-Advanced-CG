@@ -12,6 +12,7 @@
 #include <functional>
 #include <mutex>
 
+#include <OpenImageDenoise/oidn.hpp>
 
 #define MAX_DEPTH_PathT 16
 
@@ -37,10 +38,11 @@ public:
 	Scene* scene;
 	GamesEngineeringBase::Window* canvas;
 	Film* film;
+	Film* filmAlbedo;
+	Film* filmNormal;
 	MTRandom* samplers;
 	std::thread** threads;
 	int numProcs;
-	Colour* TileBasedBuffer;
 
 	std::vector<VPL> VPLs;
 
@@ -49,18 +51,23 @@ public:
 		scene = _scene;
 		canvas = _canvas;
 		film = new Film();
+		filmAlbedo = new Film();
+		filmNormal = new Film();
 		film->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new BoxFilter());
+		//filmAlbedo->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new BoxFilter());
+		//filmNormal->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new BoxFilter());
 		SYSTEM_INFO sysInfo;
 		GetSystemInfo(&sysInfo);
 		numProcs = sysInfo.dwNumberOfProcessors;
 		threads = new std::thread * [numProcs];
 		samplers = new MTRandom[numProcs];
-		TileBasedBuffer = new Colour[(unsigned int)scene->camera.width * (unsigned int)scene->camera.height];
 		clear();
 	}
 	void clear()
 	{
 		film->clear();
+		//filmAlbedo->clear();
+		//filmNormal->clear();
 	}
 
 
@@ -381,7 +388,7 @@ public:
 			Vec3 wi = light->sampleDirectionFromLight(sampler, pdfDirection);
 			wi = wi.normalize();
 			float pdfTotal = pmf * pdfPosition * (float)N_VPLs;
-			
+
 			if (pdfTotal <= 0.0f) continue;
 			Colour Le = light->evaluate(-wi);
 
@@ -530,10 +537,7 @@ public:
 
 		for (int y = startY; y < endY; y++) {
 			for (int x = startX; x < endX; x++) {
-				//Colour col = TileBasedBuffer[y * filmWidth + x];
-				//unsigned char r = static_cast<unsigned char>(col.r * 255);
-				//unsigned char g = static_cast<unsigned char>(col.g * 255);
-				//unsigned char b = static_cast<unsigned char>(col.b * 255);
+
 				unsigned char r, g, b;
 				film->tonemap(x, y, r, g, b);
 				canvas->draw(x, y, r, g, b);
@@ -560,20 +564,22 @@ public:
 				//Colour col = direct(ray, samplers);
 
 				Colour pathThroughput(1.0f, 1.0f, 1.0f);
-				Colour col = pathTrace(ray, pathThroughput, 0, samplers);
+				//Colour col = pathTrace(ray, pathThroughput, 0, samplers);
 
 				ShadingData temp;
 				//Colour col = pathTraceMIS(ray, pathThroughput, 0, samplers, temp);
 
-				//Colour col = directInstantRadiosity(ray);
+				Colour col = directInstantRadiosity(ray);
 
-				//Colour col = viewNormals(ray);
-				//Colour col = albedo(ray);
 
 				film->splat(px, py, col);
 
-				TileBasedBuffer[y * filmWidth + x] = col;
+				//col = albedo(ray);
+				//filmAlbedo->splat(px, py, col);
 
+				//col = viewNormals(ray);
+				//filmNormal->splat(px, py, col);
+				
 			}
 		}
 	}
@@ -587,9 +593,13 @@ public:
 	}
 	void render() {
 		film->incrementSPP();
+		filmAlbedo->incrementSPP();
+		filmNormal->incrementSPP();
 
 		const int filmWidth = film->width;
 		const int filmHeight = film->height;
+
+
 
 		int numCore = std::thread::hardware_concurrency();
 		//numCore = 1;
@@ -633,6 +643,59 @@ public:
 		threads.clear();
 
 		// multi thread for render
+
+		////oidn::DeviceRef device = oidn::newDevice(); // CPU or GPU if available
+		//oidn::DeviceRef device = oidn::newDevice(oidn::DeviceType::CPU);
+		//device.commit();
+
+		//// Create buffers for input/output images accessible by both host (CPU) and device (CPU/GPU)
+		//oidn::BufferRef colorBuf = device.newBuffer(filmWidth * filmHeight * 3 * sizeof(float));
+		//oidn::BufferRef albedoBuf = device.newBuffer(filmWidth * filmHeight * 3 * sizeof(float));
+		//oidn::BufferRef normalBuf = device.newBuffer(filmWidth * filmHeight * 3 * sizeof(float));
+		//oidn::BufferRef outputBuf = device.newBuffer(filmWidth * filmHeight * 3 * sizeof(float));
+
+		//// Create a filter for denoising a beauty (color) image using prefiltered auxiliary images too
+		//oidn::FilterRef filter = device.newFilter("RT"); // generic ray tracing filter
+		//filter.setImage("color", colorBuf, oidn::Format::Float3, filmWidth, filmHeight); // beauty
+		//filter.setImage("albedo", albedoBuf, oidn::Format::Float3, filmWidth, filmHeight); // auxiliary
+		//filter.setImage("normal", normalBuf, oidn::Format::Float3, filmWidth, filmHeight); // auxiliary
+		//filter.setImage("output", outputBuf, oidn::Format::Float3, filmWidth, filmHeight); // denoised beauty
+		//filter.set("hdr", true); // beauty image is HDR
+		//filter.set("cleanAux", true); // auxiliary images will be prefiltered
+		//filter.commit();
+
+
+		//float* colorPtr = (float*)colorBuf.getData();
+		//float* albedoPtr = (float*)albedoBuf.getData();
+		//float* normalPtr = (float*)normalBuf.getData();
+		//size_t dataSize = film->width * film->height * 3 * sizeof(float);
+		//memcpy(colorPtr, film->film, dataSize);
+		//memcpy(albedoPtr, filmAlbedo->film, dataSize);
+		//memcpy(normalPtr, filmNormal->film, dataSize);
+
+		//// Create a separate filter for denoising an auxiliary albedo image (in-place)
+		//oidn::FilterRef albedoFilter = device.newFilter("RT"); // same filter type as for beauty
+		//albedoFilter.setImage("albedo", albedoBuf, oidn::Format::Float3, filmWidth, filmHeight);
+		//albedoFilter.setImage("output", albedoBuf, oidn::Format::Float3, filmWidth, filmHeight);
+		//albedoFilter.commit();
+
+		////// Create a separate filter for denoising an auxiliary normal image (in-place)
+		//oidn::FilterRef normalFilter = device.newFilter("RT"); // same filter type as for beauty
+		//normalFilter.setImage("normal", normalBuf, oidn::Format::Float3, filmWidth, filmHeight);
+		//normalFilter.setImage("output", normalBuf, oidn::Format::Float3, filmWidth, filmHeight);
+		//normalFilter.commit();
+
+		////// Prefilter the auxiliary images
+		//albedoFilter.execute();
+		//normalFilter.execute();
+
+		//// Filter the beauty image
+		//filter.execute();
+
+		//float* outputPtr = (float*)outputBuf.getData();
+
+		//memcpy(film->film, outputPtr, dataSize);
+
 
 		nextTile = 0; //reset atomic
 		auto Render = [&]() {
