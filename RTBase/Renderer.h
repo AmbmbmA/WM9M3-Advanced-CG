@@ -185,7 +185,70 @@ public:
 
 	}
 
+	Colour computeDirectMIS(ShadingData shadingData, Sampler* sampler)
+	{
+		// Is surface is specular we cannot computing direct lighting
+		if (shadingData.bsdf->isPureSpecular() == true)
+		{
+			return Colour(0.0f, 0.0f, 0.0f);
+		}
+		// Compute direct lighting here
+		float pmf;
+		Light* light = scene->sampleLight(sampler, pmf);
+		if (!light) return Colour(0.0f, 0.0f, 0.0f);
 
+		float pdfLight;
+		Colour emit(0, 0, 0);
+		Vec3 lightPos = light->sample(shadingData, sampler, emit, pdfLight);
+
+		float pdf = pmf * pdfLight;
+		if (pdf < 0) return Colour(0.0f, 0.0f, 0.0f);
+
+		Vec3 wi(0, 0, 0);
+		float GeomtryTermHalfArea = 0.0f;
+		float pdfWeight = 1.0f;
+		if (light->isArea()) {
+			wi = lightPos - shadingData.x;
+			float r2Inv = 1.0f / wi.lengthSq();
+			wi = wi.normalize();
+			float costheta = max(0, wi.dot(shadingData.sNormal));
+			float costhetaL = max(0, -wi.dot(light->normal(wi)));
+			GeomtryTermHalfArea = costheta * costhetaL * r2Inv;
+			if (GeomtryTermHalfArea > 0) {
+				if (!scene->visible(shadingData.x, lightPos)) {
+					return Colour(0.0f, 0.0f, 0.0f);
+				}
+			}
+			else {
+				return Colour(0.0f, 0.0f, 0.0f);
+			}
+
+
+
+		}
+		else {
+
+			wi = lightPos;
+			wi = wi.normalize();
+			GeomtryTermHalfArea = max(0, wi.dot(shadingData.sNormal));
+			if (GeomtryTermHalfArea > 0) {
+				if (!scene->visible(shadingData.x, shadingData.x + (lightPos * 10000.0f))) {
+					return Colour(0.0f, 0.0f, 0.0f);
+				}
+			}
+			else {
+				return Colour(0.0f, 0.0f, 0.0f);
+			}
+			float pdfBSDF = shadingData.bsdf->PDF(shadingData, wi);
+
+			pdfWeight = pdf / (pdf + pdfBSDF);
+		}
+		Colour f = shadingData.bsdf->evaluate(shadingData, wi);
+
+
+		return  (f * emit * GeomtryTermHalfArea / pdf) * pdfWeight;
+
+	}
 	Colour pathTraceMIS(Ray& r, Colour& pathThroughput, int depth, Sampler* sampler, ShadingData prevSD, bool canHitLight = true)
 	{
 		// Add pathtracer code here
@@ -206,7 +269,7 @@ public:
 					return Colour(0.0f, 0.0f, 0.0f);
 				}
 			}
-			Colour direct = pathThroughput * computeDirect(shadingData, sampler);
+			Colour direct = pathThroughput * computeDirectMIS(shadingData, sampler);
 			if (depth > MAX_DEPTH_PathT)
 			{
 				return direct;
@@ -220,24 +283,19 @@ public:
 			{
 				return direct;
 			}
+
+
 			Colour bsdf;
-			float pdf;
-			Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdf);
+			float pdfBSDF;
+			Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdfBSDF);
 
 			float pmf = 1.0f / scene->lights.size();
 			float pdfLight = scene->background->PDF(shadingData, wi);
 			float pdfenv = pmf * pdfLight;
 
-			//float GeomtryTermHalfArea = max(0, wi.dot(shadingData.sNormal));
-			//if (!scene->visible(shadingData.x, shadingData.x + (wi * 10000.0f))) {
-			//	GeomtryTermHalfArea = 0;
-			//}
-			//float pdf2 = scene->background->PDF(shadingData, wi) / fabsf(Dot(wi, shadingData.sNormal)) * GeomtryTermHalfArea;
-			//float pdf2 = scene->background->PDF(shadingData, wi);
+			float pdfWeight = pdfBSDF / (pdfenv + pdfBSDF);
 
-			float pdfsumInv = 1.0f / (pdf + pdfenv);
-			float weight = pdf * pdfsumInv;
-			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) * weight * pdfsumInv;
+			pathThroughput = (pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdfBSDF) * pdfWeight;
 
 			r.init(shadingData.x + (wi * 0.001f), wi);
 			return (direct + pathTraceMIS(r, pathThroughput, depth + 1, sampler, shadingData, shadingData.bsdf->isPureSpecular()));
@@ -255,8 +313,6 @@ public:
 		float weight = pdfenv / (pdfenv + pdfbsdf);
 
 		return envColor * weight;
-
-		//return scene->background->evaluate(shadingData, r.dir);
 
 	}
 
@@ -277,7 +333,6 @@ public:
 		//return Colour(0.0f, 0.0f, 0.0f);
 
 	}
-
 	void connectToCamera(Vec3 p, Vec3 n, Colour col) {
 		float x, y;
 		if (!scene->camera.projectOntoCamera(p, x, y)) return;
@@ -564,12 +619,12 @@ public:
 				//Colour col = direct(ray, samplers);
 
 				Colour pathThroughput(1.0f, 1.0f, 1.0f);
-				//Colour col = pathTrace(ray, pathThroughput, 0, samplers);
+				Colour col = pathTrace(ray, pathThroughput, 0, samplers);
 
 				ShadingData temp;
 				//Colour col = pathTraceMIS(ray, pathThroughput, 0, samplers, temp);
 
-				Colour col = directInstantRadiosity(ray);
+				//Colour col = directInstantRadiosity(ray);
 
 
 				film->splat(px, py, col);
@@ -579,7 +634,7 @@ public:
 
 				//col = viewNormals(ray);
 				//filmNormal->splat(px, py, col);
-				
+
 			}
 		}
 	}

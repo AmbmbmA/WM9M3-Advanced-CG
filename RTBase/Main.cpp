@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/dining-room";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/glass-of-water";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/house";
-	std::string sceneName = "../../COURSE_RESOURCE/Scenes1/kitchen";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/kitchen";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/living-room";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/living-room-2";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/living-room-3";
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/staircase2";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/teapot-full";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Terrain";
-	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/veach-bidir";
+	std::string sceneName = "../../COURSE_RESOURCE/Scenes1/veach-bidir";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/veach-mis";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Sponza";
 	std::string filename = "GI.hdr";
