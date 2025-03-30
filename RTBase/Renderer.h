@@ -592,6 +592,7 @@ public:
 		const int filmHeight = film->height;
 
 		int numCore = std::thread::hardware_concurrency();
+		//numCore = 1;
 
 		const int tileSize = 32;
 
