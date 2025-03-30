@@ -307,6 +307,18 @@ public:
 
 		// Return a tonemapped pixel at coordinates x, y
 	}
+	void tonemapSPP(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, int _SPP,float exposure = 1.0f)
+	{
+
+		Colour pixel = film[y * width + x] * exposure / (float)_SPP;
+
+		ToneMap tm(&pixel);
+
+		tm.Filmic(r, g, b);
+
+	}
+
+
 	// Do not change any code below this line
 	void init(int _width, int _height, ImageFilter* _filter)
 	{

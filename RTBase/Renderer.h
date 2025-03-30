@@ -43,6 +43,7 @@ public:
 	MTRandom* samplers;
 	std::thread** threads;
 	int numProcs;
+	std::vector<int> tileSPPGlobal;
 
 	std::vector<VPL> VPLs;
 
@@ -61,11 +62,25 @@ public:
 		numProcs = sysInfo.dwNumberOfProcessors;
 		threads = new std::thread * [numProcs];
 		samplers = new MTRandom[numProcs];
+		const int tileSize = 16;
+
+		int numTilesX = (film->width + tileSize - 1) / tileSize;
+		int numTilesY = (film->height + tileSize - 1) / tileSize;
+		int totalTiles = numTilesX * numTilesY;
+		tileSPPGlobal.resize(totalTiles, 0);
+
 		clear();
 	}
 	void clear()
 	{
 		film->clear();
+		tileSPPGlobal.clear();
+		const int tileSize = 16;
+		int numTilesX = (film->width + tileSize - 1) / tileSize;
+		int numTilesY = (film->height + tileSize - 1) / tileSize;
+		int totalTiles = numTilesX * numTilesY;
+		tileSPPGlobal.resize(totalTiles, 0);
+
 		//filmAlbedo->clear();
 		//filmNormal->clear();
 	}
@@ -646,15 +661,15 @@ public:
 		}
 
 	}
-	void render() {
+
+
+	void render1() {
 		film->incrementSPP();
 		filmAlbedo->incrementSPP();
 		filmNormal->incrementSPP();
 
 		const int filmWidth = film->width;
 		const int filmHeight = film->height;
-
-
 
 		int numCore = std::thread::hardware_concurrency();
 		//numCore = 1;
@@ -674,7 +689,7 @@ public:
 		std::vector<std::thread> threads;
 		threads.reserve(numCore);
 
-		traceVPLs(samplers, 5);
+		//traceVPLs(samplers, 10);
 
 		// multi-thread for splatting
 		auto Splat = [&]() {
@@ -772,6 +787,197 @@ public:
 				t.join();
 		}
 	}
+
+	void renderTileBasedAdaptive(int tileX, int tileY, int tileSize, int filmWidth, int filmHeight) {
+		int startX = tileX * tileSize;
+		int startY = tileY * tileSize;
+		int endX = min(startX + tileSize, filmWidth);
+		int endY = min(startY + tileSize, filmHeight);
+		int numTilesX = (filmWidth + tileSize - 1) / tileSize;
+
+
+		for (int y = startY; y < endY; y++) {
+			for (int x = startX; x < endX; x++) {
+
+				unsigned char r, g, b;
+				film->tonemapSPP(x, y, r, g, b, tileSPPGlobal[tileY * numTilesX + tileX]);
+
+				canvas->draw(x, y, r, g, b);
+			}
+		}
+	}
+	void splatTileBasedAdaptive(int tileX, int tileY, int tileSize, int filmWidth, int filmHeight, int SPP) {
+		int startX = tileX * tileSize;
+		int startY = tileY * tileSize;
+		int endX = min(startX + tileSize, filmWidth);
+		int endY = min(startY + tileSize, filmHeight);
+
+		for (int i = 0; i < SPP; ++i) {
+			for (int y = startY; y < endY; y++) {
+				for (int x = startX; x < endX; x++) {
+					float px = x + samplers->next();
+					float py = y + samplers->next();
+					Ray ray = scene->camera.generateRay(px, py);
+
+					//Colour col = direct(ray, samplers);
+
+					Colour pathThroughput(1.0f, 1.0f, 1.0f);
+					Colour col = pathTrace(ray, pathThroughput, 0, samplers);
+
+					ShadingData temp;
+
+					//Colour col = directInstantRadiosity(ray);
+
+					film->splat(px, py, col);
+
+				}
+			}
+		}
+	}
+	float getBlockVariance(int tileX, int tileY, int tileSize) {
+		unsigned int startX = tileX * tileSize;
+		unsigned int startY = tileY * tileSize;
+		unsigned int width = film->width;
+		unsigned int height = film->height;
+		int endX = min(startX + tileSize, width);
+		int endY = min(startY + tileSize, height);
+		float sum = 0.0f;
+		int count = 0;
+		for (int y = startY; y < endY; y++) {
+			for (int x = startX; x < endX; x++) {
+				float lum = film->film[y * width + x].Lum();
+				sum += lum;
+				count++;
+			}
+		}
+		if (count <= 1) return 0.0f;
+		float mean = sum / count;
+
+		float sumTerm = 0;
+		for (int y = startY; y < endY; y++) {
+			for (int x = startX; x < endX; x++) {
+				float temp = mean - film->film[y * width + x].Lum();
+				sumTerm += temp * temp;
+			}
+		}
+		return sumTerm / (count - 1);
+	}
+
+	void render() {
+
+		int initialSPP = 4;
+
+		const int filmWidth = film->width;
+		const int filmHeight = film->height;
+
+		int numCore = std::thread::hardware_concurrency();
+
+		const int tileSize = 16;
+
+		int numTilesX = (filmWidth + tileSize - 1) / tileSize;
+		int numTilesY = (filmHeight + tileSize - 1) / tileSize;
+		int totalTiles = numTilesX * numTilesY;
+
+		// atomic counter
+		std::atomic<int> nextTile(0);
+
+		std::vector<std::thread> threads;
+		threads.reserve(numCore);
+
+		// multi-thread for splatting initial
+		auto Splat = [&]() {
+			while (true) {
+				int tileIndex = nextTile.fetch_add(1);
+				if (tileIndex >= totalTiles)
+					break;
+				int tileX = tileIndex % numTilesX;
+				int tileY = tileIndex / numTilesX;
+				splatTileBasedAdaptive(tileX, tileY, tileSize, filmWidth, filmHeight, initialSPP);
+			}
+			};
+		for (int i = 0; i < numCore; i++) {
+			threads.emplace_back(Splat);
+		}
+		for (auto& t : threads) {
+			if (t.joinable())
+				t.join();
+		}
+		threads.clear();
+
+		nextTile = 0;
+
+		// Get variance for block
+		std::vector<float> variances(totalTiles, 0.0f);
+		float totalVariance = 0.0f;
+		for (int tileY = 0; tileY < numTilesY; tileY++) {
+			for (int tileX = 0; tileX < numTilesX; tileX++) {
+				float temp = getBlockVariance(tileX, tileY, tileSize);
+				variances[tileY * numTilesX + tileX] = temp;
+				totalVariance += temp;
+			}
+		}
+
+		if (totalVariance <= 0.0f) {
+			return;
+		}
+
+		// allocate the SPP
+		const int totalSPP = totalTiles * initialSPP;
+		std::vector<int>tileSPP(totalTiles, 0);
+		for (int tileY = 0; tileY < numTilesY; tileY++) {
+			for (int tileX = 0; tileX < numTilesX; tileX++) {
+				float wi = variances[tileY * numTilesX + tileX] / totalVariance;
+				int temp = static_cast<int>(std::ceil(wi * totalSPP)) + initialSPP;
+				tileSPP[tileY * numTilesX + tileX] = temp;
+				tileSPPGlobal[tileY * numTilesX + tileX] += temp;
+			}
+		}
+
+		// atomic counter
+		nextTile = 0;
+
+		// multi-thread for splatting initial
+		auto Splat2 = [&]() {
+			while (true) {
+				int tileIndex = nextTile.fetch_add(1);
+				if (tileIndex >= totalTiles)
+					break;
+				int tileX = tileIndex % numTilesX;
+				int tileY = tileIndex / numTilesX;
+				splatTileBasedAdaptive(tileX, tileY, tileSize, filmWidth, filmHeight, tileSPP[tileY * numTilesX + tileX]);
+			}
+			};
+		for (int i = 0; i < numCore; i++) {
+			threads.emplace_back(Splat2);
+		}
+		for (auto& t : threads) {
+			if (t.joinable())
+				t.join();
+		}
+		threads.clear();
+
+		nextTile = 0; //reset atomic
+		auto Render = [&]() {
+			while (true) {
+				int tileIndex = nextTile.fetch_add(1);
+				if (tileIndex >= totalTiles)
+					break;
+				int tileX = tileIndex % numTilesX;
+				int tileY = tileIndex / numTilesX;
+				renderTileBasedAdaptive(tileX, tileY, tileSize, filmWidth, filmHeight);
+			}
+			};
+
+		for (int i = 0; i < numCore; i++) {
+			threads.emplace_back(Render);
+		}
+		for (auto& t : threads) {
+			if (t.joinable())
+				t.join();
+		}
+	}
+
+
 
 	void renderOld()
 	{
