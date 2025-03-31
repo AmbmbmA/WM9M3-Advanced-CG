@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/veach-mis";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Sponza";
 	std::string filename = "GI.hdr";
-	//unsigned int SPP = 8192;
-	unsigned int SPP = 20;
+	unsigned int SPP = 8192;
+	//unsigned int SPP = 20;
 
 	if (argc > 1)
 	{

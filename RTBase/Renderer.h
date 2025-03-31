@@ -38,8 +38,8 @@ public:
 	Scene* scene;
 	GamesEngineeringBase::Window* canvas;
 	Film* film;
-	Film* filmAlbedo;
-	Film* filmNormal;
+	//Film* filmAlbedo;
+	//Film* filmNormal;
 	MTRandom* samplers;
 	std::thread** threads;
 	int numProcs;
@@ -52,9 +52,9 @@ public:
 		scene = _scene;
 		canvas = _canvas;
 		film = new Film();
-		filmAlbedo = new Film();
-		filmNormal = new Film();
-		film->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new MitchellNetravaliFilter());
+		//filmAlbedo = new Film();
+		//filmNormal = new Film();
+		film->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new BoxFilter());
 		//filmAlbedo->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new BoxFilter());
 		//filmNormal->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new BoxFilter());
 		SYSTEM_INFO sysInfo;
@@ -316,7 +316,6 @@ public:
 			float costheta = max(0, wi.dot(shadingData.sNormal));
 			float costhetaL = max(0, -wi.dot(light->normal(wi)));
 			if(light->isArea()) pdfLight = pdfLight * costhetaL / r2;
-
 
 			//float pmf = 1.0f / scene->lights.size();
 			//float pdfLight = scene->background->PDF(shadingData, wi);
@@ -650,13 +649,12 @@ public:
 				//Colour col = direct(ray, samplers);
 
 				Colour pathThroughput(1.0f, 1.0f, 1.0f);
-				//Colour col = pathTrace(ray, pathThroughput, 0, samplers);
+				Colour col = pathTrace(ray, pathThroughput, 0, samplers);
 
 				ShadingData temp;
-				Colour col = pathTraceMIS(ray, pathThroughput, 0, samplers, temp);
+				//Colour col = pathTraceMIS(ray, pathThroughput, 0, samplers, temp);
 
 				//Colour col = directInstantRadiosity(ray);
-
 
 				film->splat(px, py, col);
 
@@ -680,8 +678,8 @@ public:
 
 	void render() {
 		film->incrementSPP();
-		filmAlbedo->incrementSPP();
-		filmNormal->incrementSPP();
+		//filmAlbedo->incrementSPP();
+		//filmNormal->incrementSPP();
 
 		const int filmWidth = film->width;
 		const int filmHeight = film->height;
@@ -693,7 +691,6 @@ public:
 		int numTilesX = (filmWidth + tileSize - 1) / tileSize;
 		int numTilesY = (filmHeight + tileSize - 1) / tileSize;
 		int totalTiles = numTilesX * numTilesY;
-
 
 		// atomic counter
 		std::atomic<int> nextTile(0);
@@ -763,13 +760,13 @@ public:
 		//albedoFilter.setImage("output", albedoBuf, oidn::Format::Float3, filmWidth, filmHeight);
 		//albedoFilter.commit();
 
-		////// Create a separate filter for denoising an auxiliary normal image (in-place)
+		//// Create a separate filter for denoising an auxiliary normal image (in-place)
 		//oidn::FilterRef normalFilter = device.newFilter("RT"); // same filter type as for beauty
 		//normalFilter.setImage("normal", normalBuf, oidn::Format::Float3, filmWidth, filmHeight);
 		//normalFilter.setImage("output", normalBuf, oidn::Format::Float3, filmWidth, filmHeight);
 		//normalFilter.commit();
 
-		////// Prefilter the auxiliary images
+		//// Prefilter the auxiliary images
 		//albedoFilter.execute();
 		//normalFilter.execute();
 
@@ -989,7 +986,6 @@ public:
 	}
 
 
-
 	void renderOld()
 	{
 		film->incrementSPP();
@@ -1028,6 +1024,9 @@ public:
 		stbi_write_png(filename.c_str(), canvas->getWidth(), canvas->getHeight(), 3, canvas->getBackBuffer(), canvas->getWidth() * 3);
 	}
 };
+
+
+
 
 
 
