@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 	// Initialize default parameters
 	//std::string sceneName = "cornell-box";
 	//std::string sceneName = "MaterialsScene";
-	std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bathroom";
+	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bathroom";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bathroom2";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/bedroom";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/car2";
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/dining-room";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/glass-of-water";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/house";
-	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/kitchen";
+	std::string sceneName = "../../COURSE_RESOURCE/Scenes1/kitchen";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/living-room";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/living-room-2";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/living-room-3";
@@ -49,7 +49,8 @@ int main(int argc, char *argv[])
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/veach-mis";
 	//std::string sceneName = "../../COURSE_RESOURCE/Scenes1/Sponza";
 	std::string filename = "GI.hdr";
-	unsigned int SPP = 8192;
+	//unsigned int SPP = 8192;
+	unsigned int SPP = 20;
 
 	if (argc > 1)
 	{

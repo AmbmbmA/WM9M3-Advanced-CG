@@ -145,21 +145,7 @@ public:
 		tabuDist = new TabulatedDistributionEnv(_env);
 	}
 
-	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
-	{
-		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
-
-		float u, v;
-		tabuDist->sample(sampler->next(), sampler->next(), u, v, pdf);
-		float theta = v * M_PI;
-		float phi = u * 2.0f * M_PI;
-
-		float sinTheta = sinf(theta);
-		Vec3 wi(sinTheta * cosf(phi), cosf(theta), sinTheta * sinf(phi));
-		reflectedColour = evaluate(wi);
-
-		return wi;
-	}
+	
 	Vec3 sampleOld(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
@@ -269,6 +255,21 @@ public:
 
 	}
 
+	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	{
+		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
+
+		float u, v;
+		tabuDist->sample(sampler->next(), sampler->next(), u, v, pdf);
+		float theta = v * M_PI;
+		float phi = u * 2.0f * M_PI;
+
+		float sinTheta = sinf(theta);
+		Vec3 wi(sinTheta * cosf(phi), cosf(theta), sinTheta * sinf(phi));
+		reflectedColour = evaluate(wi);
+
+		return wi;
+	}
 	Colour evaluate(const Vec3& wi)
 	{
 		float u = atan2f(wi.z, wi.x);
@@ -297,7 +298,6 @@ public:
 		}
 
 		float theta = acosf(y);
-
 		float phi = atan2f(wi.z, wi.x);
 
 		// atan2f range[ -pi, pi]
@@ -357,3 +357,4 @@ public:
 		//return wi;
 	}
 };
+

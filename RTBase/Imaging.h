@@ -309,13 +309,9 @@ public:
 	}
 	void tonemapSPP(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, int _SPP,float exposure = 1.0f)
 	{
-
 		Colour pixel = film[y * width + x] * exposure / (float)_SPP;
-
 		ToneMap tm(&pixel);
-
 		tm.Filmic(r, g, b);
-
 	}
 
 

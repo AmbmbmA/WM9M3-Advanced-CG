@@ -54,7 +54,7 @@ public:
 		film = new Film();
 		filmAlbedo = new Film();
 		filmNormal = new Film();
-		film->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new BoxFilter());
+		film->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new MitchellNetravaliFilter());
 		//filmAlbedo->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new BoxFilter());
 		//filmNormal->init((unsigned int)scene->camera.width, (unsigned int)scene->camera.height, new BoxFilter());
 		SYSTEM_INFO sysInfo;
@@ -74,12 +74,12 @@ public:
 	void clear()
 	{
 		film->clear();
-		tileSPPGlobal.clear();
-		const int tileSize = 16;
-		int numTilesX = (film->width + tileSize - 1) / tileSize;
-		int numTilesY = (film->height + tileSize - 1) / tileSize;
-		int totalTiles = numTilesX * numTilesY;
-		tileSPPGlobal.resize(totalTiles, 0);
+		//tileSPPGlobal.clear();
+		//const int tileSize = 16;
+		//int numTilesX = (film->width + tileSize - 1) / tileSize;
+		//int numTilesY = (film->height + tileSize - 1) / tileSize;
+		//int totalTiles = numTilesX * numTilesY;
+		//tileSPPGlobal.resize(totalTiles, 0);
 
 		//filmAlbedo->clear();
 		//filmNormal->clear();
@@ -238,7 +238,10 @@ public:
 				return Colour(0.0f, 0.0f, 0.0f);
 			}
 
+			float pdfBSDF = shadingData.bsdf->PDF(shadingData, wi);
 
+			pdf = pdf * GeomtryTermHalfArea / costhetaL;
+			pdfWeight = pdf / (pdf + pdfBSDF);
 
 		}
 		else {
@@ -259,7 +262,6 @@ public:
 			pdfWeight = pdf / (pdf + pdfBSDF);
 		}
 		Colour f = shadingData.bsdf->evaluate(shadingData, wi);
-
 
 		return  (f * emit * GeomtryTermHalfArea / pdf) * pdfWeight;
 
@@ -304,11 +306,25 @@ public:
 			float pdfBSDF;
 			Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdfBSDF);
 
-			float pmf = 1.0f / scene->lights.size();
-			float pdfLight = scene->background->PDF(shadingData, wi);
+			float pmf;
+			Light* light = scene->sampleLight(sampler, pmf);
+			float pdfLight = light->PDF(shadingData, wi);
+
+
+			float r2 = wi.lengthSq();
+			wi = wi.normalize();
+			float costheta = max(0, wi.dot(shadingData.sNormal));
+			float costhetaL = max(0, -wi.dot(light->normal(wi)));
+			if(light->isArea()) pdfLight = pdfLight * costhetaL / r2;
+
+
+			//float pmf = 1.0f / scene->lights.size();
+			//float pdfLight = scene->background->PDF(shadingData, wi);
+
 			float pdfenv = pmf * pdfLight;
 
 			float pdfWeight = pdfBSDF / (pdfenv + pdfBSDF);
+			if (pdfenv <= 0) pdfWeight = 1;
 
 			pathThroughput = (pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdfBSDF) * pdfWeight;
 
@@ -634,10 +650,10 @@ public:
 				//Colour col = direct(ray, samplers);
 
 				Colour pathThroughput(1.0f, 1.0f, 1.0f);
-				Colour col = pathTrace(ray, pathThroughput, 0, samplers);
+				//Colour col = pathTrace(ray, pathThroughput, 0, samplers);
 
 				ShadingData temp;
-				//Colour col = pathTraceMIS(ray, pathThroughput, 0, samplers, temp);
+				Colour col = pathTraceMIS(ray, pathThroughput, 0, samplers, temp);
 
 				//Colour col = directInstantRadiosity(ray);
 
@@ -662,8 +678,7 @@ public:
 
 	}
 
-
-	void render1() {
+	void render() {
 		film->incrementSPP();
 		filmAlbedo->incrementSPP();
 		filmNormal->incrementSPP();
@@ -675,7 +690,6 @@ public:
 		//numCore = 1;
 
 		const int tileSize = 32;
-
 		int numTilesX = (filmWidth + tileSize - 1) / tileSize;
 		int numTilesY = (filmHeight + tileSize - 1) / tileSize;
 		int totalTiles = numTilesX * numTilesY;
@@ -795,13 +809,10 @@ public:
 		int endY = min(startY + tileSize, filmHeight);
 		int numTilesX = (filmWidth + tileSize - 1) / tileSize;
 
-
 		for (int y = startY; y < endY; y++) {
 			for (int x = startX; x < endX; x++) {
-
 				unsigned char r, g, b;
 				film->tonemapSPP(x, y, r, g, b, tileSPPGlobal[tileY * numTilesX + tileX]);
-
 				canvas->draw(x, y, r, g, b);
 			}
 		}
@@ -863,7 +874,7 @@ public:
 		return sumTerm / (count - 1);
 	}
 
-	void render() {
+	void renderAdaptive() {
 
 		int initialSPP = 4;
 
@@ -927,7 +938,7 @@ public:
 		for (int tileY = 0; tileY < numTilesY; tileY++) {
 			for (int tileX = 0; tileX < numTilesX; tileX++) {
 				float wi = variances[tileY * numTilesX + tileX] / totalVariance;
-				int temp = static_cast<int>(std::ceil(wi * totalSPP)) + initialSPP;
+				int temp = wi * totalSPP + initialSPP;
 				tileSPP[tileY * numTilesX + tileX] = temp;
 				tileSPPGlobal[tileY * numTilesX + tileX] += temp;
 			}
@@ -1017,3 +1028,7 @@ public:
 		stbi_write_png(filename.c_str(), canvas->getWidth(), canvas->getHeight(), 3, canvas->getBackBuffer(), canvas->getWidth() * 3);
 	}
 };
+
+
+
+

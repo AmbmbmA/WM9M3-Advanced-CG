@@ -526,7 +526,6 @@ public:
 		startIndex = start;
 		triNum = end - start;
 
-
 		// get the box for this node
 		bounds.reset();
 		for (unsigned int i = start; i < end; i++) {
@@ -542,7 +541,6 @@ public:
 			r = nullptr;
 			return;
 		}
-
 
 		float minCost = FLT_MAX; // record the minimum cost
 		int optAxis = -1; // the optimised axis to cut
@@ -737,3 +735,6 @@ public:
 	}
 
 };
+
+
+

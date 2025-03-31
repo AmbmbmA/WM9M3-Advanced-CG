@@ -251,7 +251,6 @@ public:
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Replace this with Conductor sampling code
-
 		//if too smooth, mirror
 		if (alpha < mirrorEdge) {
 			Vec3 wo = shadingData.frame.toLocal(shadingData.wo);
